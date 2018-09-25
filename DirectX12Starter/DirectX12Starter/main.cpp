@@ -408,14 +408,16 @@ bool InitD3D()
 		return false;
 	}
 
-	Vertex vertices[3] = { };
-	vertices[0].Position = XMFLOAT3(0.0f, 0.5f, 0.5f);
+	Vertex vertices[4] = { };
+	vertices[0].Position = XMFLOAT3(-0.5f, 0.5f, 0.5f);
 	vertices[1].Position = XMFLOAT3(0.5f, -0.5f, 0.5f);
 	vertices[2].Position = XMFLOAT3(-0.5f, -0.5f, 0.5f);
-	
+	vertices[3].Position = XMFLOAT3(0.5f, 0.5f, 0.5f);
+
 	vertices[0].Color = XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
-	vertices[1].Color = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[1].Color = XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	vertices[2].Color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+	vertices[3].Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	int vBufferSize = sizeof(vertices);
 
@@ -458,6 +460,49 @@ bool InitD3D()
 
 	// transition the vertex buffer data from copy destination state to vertex buffer state
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	DWORD indices[] = { 0, 1, 2,
+						0, 3, 1 };
+
+	int indexBufferSize = sizeof(indices);
+
+	// create default heap to hold index buffer
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&indexBuffer));
+
+	indexBuffer->SetName(L"Index Buffer Resource Heap");
+
+	// create upload heap to upload index buffer
+	ID3D12Resource* indexBufferUploadHeap;
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
+		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
+		nullptr,
+		IID_PPV_ARGS(&indexBufferUploadHeap));
+	indexBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
+
+	D3D12_SUBRESOURCE_DATA indexData = {};
+	indexData.pData = reinterpret_cast<BYTE*>(indices);
+	indexData.RowPitch = indexBufferSize;
+	indexData.SlicePitch = indexBufferSize;
+
+	// create command with commandlist to copy data from upload heap to default heap
+	UpdateSubresources(commandList, indexBuffer, indexBufferUploadHeap, 0, 0, 1, &indexData);
+
+	// transition the index buffer data from copy destination state to index buffer state
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	// create a index buffer view for the triangle. We get the GPU memory address to the index pointer using the GetGPUVirtualAddress() method
+	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	indexBufferView.SizeInBytes = indexBufferSize;
 
 	// execute the command list to upload the initial assets (triangle data)
 	commandList->Close();
@@ -549,7 +594,8 @@ void UpdatePipeline()
 	commandList->RSSetScissorRects(1, &scissorRect); 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); 
-	commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+	commandList->IASetIndexBuffer(&indexBufferView);
+	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // draw 2 triangles (draw 1 instance of 2 triangles)
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
@@ -618,6 +664,7 @@ void Cleanup()
 	SAFE_RELEASE(pipelineStateObject);
 	SAFE_RELEASE(rootSignature);
 	SAFE_RELEASE(vertexBuffer);
+	SAFE_RELEASE(indexBuffer);
 }
 
 void WaitForPreviousFrame()
