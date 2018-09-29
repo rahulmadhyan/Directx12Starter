@@ -5,9 +5,9 @@
 struct Vertex
 {
 	DirectX::XMFLOAT3 Position;
-	DirectX::XMFLOAT4 Color;
+	DirectX::XMFLOAT2 UV;
 
-	Vertex(float x, float y, float z, float r, float g, float b, float a) : Position(x, y, z), Color(r, g, b, a)
+	Vertex(float x, float y, float z, float u, float v) : Position(x, y, z), UV(u, v)
 	{
 	}
 };
