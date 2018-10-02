@@ -1,10 +1,46 @@
 #include "stdafx.h"
 
+void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns)
+{
+	// Our temp console info struct
+	CONSOLE_SCREEN_BUFFER_INFO coninfo;
+
+	// Get the console info and set the number of lines
+	AllocConsole();
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+	coninfo.dwSize.Y = bufferLines;
+	coninfo.dwSize.X = bufferColumns;
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+
+	SMALL_RECT rect;
+	rect.Left = 0;
+	rect.Top = 0;
+	rect.Right = windowColumns;
+	rect.Bottom = windowLines;
+	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE), TRUE, &rect);
+
+	FILE *stream;
+	freopen_s(&stream, "CONIN$", "r", stdin);
+	freopen_s(&stream, "CONOUT$", "w", stdout);
+	freopen_s(&stream, "CONOUT$", "w", stderr);
+
+	// Prevent accidental console window close
+	HWND consoleHandle = GetConsoleWindow();
+	HMENU hmenu = GetSystemMenu(consoleHandle, FALSE);
+	EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
+}
+
 int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine,
 	int nShowCmd)
 {
+#if defined(DEBUG) || defined(_DEBUG)
+	// Do we want a console window?  Probably only in debug mode
+	CreateConsoleWindow(500, 120, 32, 120);
+	printf("Console window created successfully.  Feel free to printf() here.");
+#endif
+
 	// create the window
 	if (!InitializeWindow(hInstance, nShowCmd, FullScreen))
 	{
@@ -133,6 +169,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 	{
 
 	case WM_KEYDOWN:
+	{
 		if (wParam == VK_ESCAPE) {
 			if (MessageBox(0, L"Are you sure you want to exit?",
 				L"Really?", MB_YESNO | MB_ICONQUESTION) == IDYES)
@@ -141,7 +178,30 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 				DestroyWindow(hwnd);
 			}
 		}
+
+		unsigned char keyCode = static_cast<unsigned char>(wParam);
+		if (InputManager::getInstance().isKeysAutoRepeat())
+		{
+			InputManager::getInstance().OnKeyPressed(keyCode);
+		}
+		else
+		{
+			const bool wasPressed = lParam & 0x40000000;
+			if (!wasPressed)
+			{
+				InputManager::getInstance().OnKeyPressed(keyCode);
+			}
+		}
+
 		return 0;
+	}
+	
+	case WM_KEYUP:
+	{
+		unsigned char keyCode = static_cast<unsigned char>(wParam);
+		InputManager::getInstance().OnKeyReleased(keyCode);
+		return 0;
+	}
 
 	case WM_DESTROY:
 		Running = false;
@@ -567,7 +627,7 @@ bool InitD3D()
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 	DWORD indices[] = {
-		// ffront face
+		// front face
 		0, 1, 2, // first triangle
 		0, 3, 1, // second triangle
 
@@ -851,21 +911,9 @@ bool InitD3D()
 	scissorRect.right = Width;
 	scissorRect.bottom = Height;
 
-	// build projection and view matrix
-	XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14f / 180.0f), (float)Width / (float)Height, 0.1f, 1000.0f);
-	XMStoreFloat4x4(&cameraProjMat, tmpMat);
+	mainCamera = Camera(Width, Height);
 
-	// set starting camera state
-	cameraPosition = XMFLOAT4(0.0f, 2.0f, -4.0f, 0.0f);
-	cameraTarget = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	cameraUp = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-
-	// build view matrix
-	XMVECTOR cPos = XMLoadFloat4(&cameraPosition);
-	XMVECTOR cTarg = XMLoadFloat4(&cameraTarget);
-	XMVECTOR cUp = XMLoadFloat4(&cameraUp);
-	tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
-	XMStoreFloat4x4(&cameraViewMat, tmpMat);
+	XMMATRIX tmpMat;
 
 	// set starting cubes position
 	// first cube
@@ -874,7 +922,7 @@ bool InitD3D()
 
 	tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
 	XMStoreFloat4x4(&cube1RotMat, XMMatrixIdentity()); // initialize cube1's rotation matrix to identity matrix
-	XMStoreFloat4x4(&cube1WorldMat, tmpMat); // store cube1's world matrix
+	XMStoreFloat4x4(&cube1WorldMat, (tmpMat)); // store cube1's world matrix
 
 	// second cube
 	cube2PositionOffset = XMFLOAT4(1.5f, 0.0f, 0.0f, 0.0f);
@@ -883,14 +931,36 @@ bool InitD3D()
 
 	tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube2's position offset vector
 	XMStoreFloat4x4(&cube2RotMat, XMMatrixIdentity()); // initialize cube2's rotation matrix to identity matrix
-	XMStoreFloat4x4(&cube2WorldMat, tmpMat); // store cube2's world matrix
+	XMStoreFloat4x4(&cube2WorldMat, (tmpMat)); // store cube2's world matrix
 
 	return true;
 }
 
 void Update()
 {
+#if defined(DEBUG) || defined(_DEBUG)
+	while (!InputManager::getInstance().KeyBufferEmpty())
+	{
+		KeyboardEvent kbe = InputManager::getInstance().ReadKey();
+		unsigned char keyCode = kbe.GetKeyCode();
+		std::string outMsg = "";
+		if (kbe.isPressed())
+		{
+			outMsg += "Pressed: ";
+		}
+		if (kbe.isReleased())
+		{
+			outMsg += "Released: ";
+		}
+	
+		outMsg += keyCode;
+		outMsg += "\n";
+		OutputDebugStringA(outMsg.c_str());
+	}
+#endif
+
 	// update app logic, such as moving the camera or figuring out what objects are in view
+	mainCamera.Update();
 
 	// create rotation matrices
 	XMMATRIX rotXMat = XMMatrixRotationX(0.0001f);
@@ -908,12 +978,12 @@ void Update()
 	XMMATRIX worldMat = rotMat * translationMat;
 
 	// store cube1's world matrix
-	XMStoreFloat4x4(&cube1WorldMat, worldMat);
+	XMStoreFloat4x4(&cube1WorldMat, (worldMat));
 
 	// update constant buffer for cube1
 	// create the wvp matrix and store in constant buffer
-	XMMATRIX viewMat = XMLoadFloat4x4(&cameraViewMat); // load view matrix
-	XMMATRIX projMat = XMLoadFloat4x4(&cameraProjMat); // load projection matrix
+	XMMATRIX viewMat = XMLoadFloat4x4(&(mainCamera.GetViewMatrix())); // load view matrix
+	XMMATRIX projMat = XMLoadFloat4x4(&(mainCamera.GetProjectionMatrix())); // load projection matrix
 	XMMATRIX wvpMat = XMLoadFloat4x4(&cube1WorldMat) * viewMat * projMat; // create wvp matrix
 	XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
 	XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
