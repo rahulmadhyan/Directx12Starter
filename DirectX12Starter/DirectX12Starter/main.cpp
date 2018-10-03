@@ -154,6 +154,8 @@ void mainloop() {
 		}
 		else {
 			// run game code
+			gameTimer.UpdateTimer();
+
 			Update();
 			Render();
 		}
@@ -216,6 +218,9 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 
 bool InitD3D()
 {
+	// timer
+	gameTimer = Timer(hwnd, WindowTitle);
+
 	HRESULT hr;
 
 	IDXGIFactory4* dxgiFactory;
@@ -958,6 +963,8 @@ void Update()
 		OutputDebugStringA(outMsg.c_str());
 	}
 #endif
+
+	gameTimer.UpdateTitleBarStats();
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 	mainCamera.Update();
