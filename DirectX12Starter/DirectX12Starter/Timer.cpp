@@ -55,8 +55,8 @@ void Timer::UpdateTitleBarStats()
 	out.precision(6);
 
 	out << windowTitle <<
-		" FPS : " << fpsFrameCount <<
-		" Frame time: " << mspf << " ms" << "\0";
+		"    FPS : " << fpsFrameCount <<
+		"    Frame time: " << mspf << " ms" << "\0";
 
 	fpsFrameCount = 0;
 	fpsTimeElapsed += 1.0f;
