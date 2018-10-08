@@ -613,7 +613,7 @@ bool InitD3D()
 	int indexCount = sizeof(indices) / sizeof(DWORD);
 
 	//cubeMesh = new Mesh(vertices, vertexCount, indices, indexCount, device, commandList);
-	cubeMesh = new Mesh("Debug/Models/cube.obj", device, commandList);
+	cubeMesh = new Mesh("Resources/Models/cube.obj", device, commandList);
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 	dsvHeapDesc.NumDescriptors = 1;
@@ -704,7 +704,7 @@ bool InitD3D()
 	D3D12_RESOURCE_DESC textureDesc;
 	int imageBytesPerRow;
 	BYTE* imageData;
-	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"Debug/Textures/demo.jpg", imageBytesPerRow);
+	int imageSize = LoadImageDataFromFile(&imageData, textureDesc, L"Resources/Textures/demo.jpg", imageBytesPerRow);
 
 	// make sure we have data
 	if (imageSize <= 0)
