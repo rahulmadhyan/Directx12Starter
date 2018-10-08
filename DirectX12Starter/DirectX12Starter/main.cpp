@@ -187,16 +187,16 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 		}
 
 		unsigned char keyCode = static_cast<unsigned char>(wParam);
-		if (InputManager::getInstance().isKeysAutoRepeat())
+		if (InputManager::getInstance()->isKeysAutoRepeat())
 		{
-			InputManager::getInstance().OnKeyPressed(keyCode);
+			InputManager::getInstance()->OnKeyPressed(keyCode);
 		}
 		else
 		{
 			const bool wasPressed = lParam & 0x40000000;
 			if (!wasPressed)
 			{
-				InputManager::getInstance().OnKeyPressed(keyCode);
+				InputManager::getInstance()->OnKeyPressed(keyCode);
 			}
 		}
 
@@ -206,7 +206,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 	case WM_KEYUP:
 	{
 		unsigned char keyCode = static_cast<unsigned char>(wParam);
-		InputManager::getInstance().OnKeyReleased(keyCode);
+		InputManager::getInstance()->OnKeyReleased(keyCode);
 		return 0;
 	}
 
@@ -372,7 +372,6 @@ bool InitD3D()
 		Running = false;
 		return false;
 	}
-
 
 	// create the fences
 	for (int i = 0; i < frameBufferCount; i++)
@@ -581,60 +580,8 @@ bool InitD3D()
 		{ -0.5f, -0.5f,  0.5f, 1.0f, 0.0f },
 	};
 
-	int vBufferSize = sizeof(vertices);
-
-	// default heap is memory on the GPU. Only the GPU has access to this memory
-	// To get data into this heap, we will have to upload the data using
-	// an upload heap
-	hr = device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
-										// from the upload heap to this heap
-		nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-		IID_PPV_ARGS(&vertexBuffer));
-
-	if (FAILED(hr))
-	{
-		Running = false;
-		return false;
-	}
-
-	// we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-	vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
-
-	// upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
-	// We will upload the vertex buffer using this heap to the default heap
-	ID3D12Resource* vBufferUploadHeap;
-	hr = device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), 
-		D3D12_HEAP_FLAG_NONE, 
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-		nullptr,
-		IID_PPV_ARGS(&vBufferUploadHeap));
-
-	if (FAILED(hr))
-	{
-		Running = false;
-		return false;
-	}
-
-	vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
-
-	// store vertex buffer in upload heap
-	D3D12_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pData = reinterpret_cast<BYTE*>(vertices); // pointer to our vertex array
-	vertexData.RowPitch = vBufferSize; // size of all our triangle vertex data
-	vertexData.SlicePitch = vBufferSize; // also the size of our triangle vertex data
-
-	// creating a command with the command list to copy the data from
-	// the upload heap to the default heap
-	UpdateSubresources(commandList, vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
-
-	// transition the vertex buffer data from copy destination state to vertex buffer state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	int vertexBufferSize = sizeof(vertices);
+	int vertexCount = vertexBufferSize / sizeof(Vertex);
 
 	DWORD indices[] = {
 		// front face
@@ -663,53 +610,10 @@ bool InitD3D()
 	};
 
 	int indexBufferSize = sizeof(indices);
-	numCubeIndices = sizeof(indices) / sizeof(DWORD);
+	int indexCount = sizeof(indices) / sizeof(DWORD);
 
-	// create default heap to hold index buffer
-	hr = device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&indexBuffer));
-
-	if (FAILED(hr))
-	{
-		Running = false;
-		return false;
-	}
-
-	indexBuffer->SetName(L"Index Buffer Resource Heap");
-
-	// create upload heap to upload index buffer
-	ID3D12Resource* indexBufferUploadHeap;
-	hr = device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-		nullptr,
-		IID_PPV_ARGS(&indexBufferUploadHeap));
-	
-	if (FAILED(hr))
-	{
-		Running = false;
-		return false;
-	}
-
-	indexBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
-
-	D3D12_SUBRESOURCE_DATA indexData = {};
-	indexData.pData = reinterpret_cast<BYTE*>(indices);
-	indexData.RowPitch = indexBufferSize;
-	indexData.SlicePitch = indexBufferSize;
-
-	// create command with commandlist to copy data from upload heap to default heap
-	UpdateSubresources(commandList, indexBuffer, indexBufferUploadHeap, 0, 0, 1, &indexData);
-
-	// transition the index buffer data from copy destination state to index buffer state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+	//cubeMesh = new Mesh(vertices, vertexCount, indices, indexCount, device, commandList);
+	cubeMesh = new Mesh("Debug/Models/cube.obj", device, commandList);
 
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
 	dsvHeapDesc.NumDescriptors = 1;
@@ -897,15 +801,15 @@ bool InitD3D()
 
 	delete imageData;
 
-	// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
-	vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-	vertexBufferView.StrideInBytes = sizeof(Vertex);
-	vertexBufferView.SizeInBytes = vBufferSize;
+	//// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
+	//vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+	//vertexBufferView.StrideInBytes = sizeof(Vertex);
+	//vertexBufferView.SizeInBytes = vBufferSize;
 
-	// create a index buffer view for the triangle. We get the GPU memory address to the index pointer using the GetGPUVirtualAddress() method
-	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-	indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
-	indexBufferView.SizeInBytes = indexBufferSize;
+	//// create a index buffer view for the triangle. We get the GPU memory address to the index pointer using the GetGPUVirtualAddress() method
+	//indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	//indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	//indexBufferView.SizeInBytes = indexBufferSize;
 
 	// fill out the Viewport
 	viewport.TopLeftX = 0;
@@ -949,9 +853,9 @@ bool InitD3D()
 void Update()
 {
 #if defined(DEBUG) || defined(_DEBUG)
-	while (!InputManager::getInstance().KeyBufferEmpty())
+	while (!InputManager::getInstance()->KeyBufferEmpty())
 	{
-		KeyboardEvent kbe = InputManager::getInstance().ReadKey();
+		KeyboardEvent kbe = InputManager::getInstance()->ReadKey();
 		unsigned char keyCode = kbe.GetKeyCode();
 		std::string outMsg = "";
 		if (kbe.isPressed())
@@ -1099,14 +1003,14 @@ void UpdatePipeline()
 	commandList->RSSetViewports(1, &viewport); 
 	commandList->RSSetScissorRects(1, &scissorRect); 
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView); 
-	commandList->IASetIndexBuffer(&indexBufferView);
+	commandList->IASetVertexBuffers(0, 1, cubeMesh->GetVertexBuffer()); 
+	commandList->IASetIndexBuffer(cubeMesh->GetIndexBuffer());
 	
 	// set cube1's constant buffer
 	commandList->SetGraphicsRootConstantBufferView(0, constantBufferUploadHeaps[frameIndex]->GetGPUVirtualAddress());
 
 	// draw first cube
-	commandList->DrawIndexedInstanced(numCubeIndices, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced(cubeMesh->GetIndexCount(), 1, 0, 0, 0);
 
 	// second cube
 
@@ -1116,7 +1020,7 @@ void UpdatePipeline()
 	commandList->SetGraphicsRootConstantBufferView(0, constantBufferUploadHeaps[frameIndex]->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
 
 	// draw second cube
-	commandList->DrawIndexedInstanced(numCubeIndices, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced(cubeMesh->GetIndexCount(), 1, 0, 0, 0);
 
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
@@ -1185,8 +1089,8 @@ void Cleanup()
 
 	SAFE_RELEASE(pipelineStateObject);
 	SAFE_RELEASE(rootSignature);
-	SAFE_RELEASE(vertexBuffer);
-	SAFE_RELEASE(indexBuffer);
+	//SAFE_RELEASE(vertexBuffer);
+	//SAFE_RELEASE(indexBuffer);
 
 	SAFE_RELEASE(depthStencilBuffer);
 	SAFE_RELEASE(dsDescriptorHeap);
@@ -1195,6 +1099,10 @@ void Cleanup()
 	{
 		SAFE_RELEASE(constantBufferUploadHeaps[i]);
 	};
+
+	delete cubeMesh;
+
+	delete InputManager::getInstance();
 }
 
 void WaitForPreviousFrame()

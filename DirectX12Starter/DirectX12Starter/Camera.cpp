@@ -68,32 +68,32 @@ void Camera::Update()
 
 	float moveRate = 0.001f;
 
-	if (InputManager::getInstance().KeyIsPressed('W'))
+	if (InputManager::getInstance()->KeyIsPressed('W'))
 	{
 		pos += (newDirection * moveRate);
 	}
 
-	if (InputManager::getInstance().KeyIsPressed('S'))
+	if (InputManager::getInstance()->KeyIsPressed('S'))
 	{
 		pos += (-newDirection * moveRate);
 	}
 
-	if (InputManager::getInstance().KeyIsPressed('A'))
+	if (InputManager::getInstance()->KeyIsPressed('A'))
 	{
 		pos += (lrVector * moveRate);
 	}
 
-	if (InputManager::getInstance().KeyIsPressed('D'))
+	if (InputManager::getInstance()->KeyIsPressed('D'))
 	{
 		pos += (-lrVector * moveRate);
 	}
 
-	if (InputManager::getInstance().KeyIsPressed(VK_SPACE))
+	if (InputManager::getInstance()->KeyIsPressed(VK_SPACE))
 	{
 		pos += (up * moveRate);
 	}
 
-	if (InputManager::getInstance().KeyIsPressed('X'))
+	if (InputManager::getInstance()->KeyIsPressed('X'))
 	{
 		pos += (-up * moveRate);
 	}

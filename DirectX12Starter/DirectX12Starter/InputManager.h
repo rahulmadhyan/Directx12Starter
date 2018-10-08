@@ -8,7 +8,7 @@ public:
 	InputManager();
 	~InputManager();
 
-	static InputManager& getInstance()
+	static InputManager* getInstance()
 	{
 		static InputManager* instance = NULL;
 		if (instance == NULL)
@@ -17,7 +17,7 @@ public:
 		}
 		_ASSERT(instance);
 		
-		return *instance;
+		return instance;
 	}
 
 	bool KeyIsPressed(const unsigned char keyCode);

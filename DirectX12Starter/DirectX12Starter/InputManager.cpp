@@ -10,7 +10,7 @@ InputManager::InputManager()
 
 InputManager::~InputManager()
 {
-
+	
 }
 
 bool InputManager::KeyIsPressed(const unsigned char keyCode)
