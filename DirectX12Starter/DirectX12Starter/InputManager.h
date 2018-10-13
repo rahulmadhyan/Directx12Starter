@@ -1,7 +1,11 @@
 #pragma once
 #include <queue>
+#include "Windows.h"
 #include "KeyboardEvent.h"
- 
+#include "Xinput.h"
+
+#pragma comment(lib, "XInput.lib")
+
 class InputManager
 {
 public:
@@ -20,7 +24,8 @@ public:
 		return instance;
 	}
 
-	bool KeyIsPressed(const unsigned char keyCode);
+	// keyboard
+	bool isKeyPressed(const unsigned char keyCode);
 	bool KeyBufferEmpty();
 	KeyboardEvent ReadKey();
 	void OnKeyPressed(const unsigned char key);
@@ -29,9 +34,19 @@ public:
 	void DisableAutoRepeatKeys();
 	bool isKeysAutoRepeat();
 
+	// controller
+	void UpdateController();
+	bool isControllerButtonPressed(WORD keyCode);
+	SHORT getLeftStickX();
+	SHORT getLeftStickY();
+	SHORT getRightStickX();
+	SHORT getRightStickY();
+
 private:
 	bool autoRepeatKeys = false;
 	bool keyStates[256];
+	DWORD previousControllerState;
+	_XINPUT_GAMEPAD gameController;
 	std::queue<KeyboardEvent> keyBuffer;
 };
 

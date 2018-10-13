@@ -159,7 +159,6 @@ void mainloop() {
 		}
 		else {
 			// run game code
-			gameTimer.UpdateTimer();
 
 			Update();
 			Render();
@@ -826,6 +825,7 @@ bool InitD3D()
 	scissorRect.bottom = Height;
 
 	mainCamera = Camera(Width, Height);
+	mainCamera.ResetCamera();
 
 	XMMATRIX tmpMat;
 
@@ -873,7 +873,10 @@ void Update()
 	}
 #endif
 
+	gameTimer.UpdateTimer();
 	gameTimer.UpdateTitleBarStats();
+
+	InputManager::getInstance()->UpdateController();
 
 	// update app logic, such as moving the camera or figuring out what objects are in view
 	mainCamera.Update();

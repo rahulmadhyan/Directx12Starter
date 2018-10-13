@@ -2,6 +2,7 @@
 
 Camera::Camera()
 {
+	
 }
 
 Camera::Camera(unsigned int width, unsigned int height)
@@ -38,12 +39,12 @@ XMFLOAT4X4 Camera::GetProjectionMatrix()
 
 void Camera::SetXRotation(float amount)
 {
-	xRotation += amount * 0.001f;
+	xRotation += amount * 0.0001f;
 }
 
 void Camera::SetYRotation(float amount)
 {
-	yRotation += amount * 0.001f;
+	yRotation += amount * 0.0001f;
 }
 
 void Camera::SetProjectionMatrix(unsigned int newWidth, unsigned int newHeight)
@@ -68,32 +69,32 @@ void Camera::Update()
 
 	float moveRate = 0.001f;
 
-	if (InputManager::getInstance()->KeyIsPressed('W'))
+	if (InputManager::getInstance()->isKeyPressed('W') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_Y))
 	{
 		pos += (newDirection * moveRate);
 	}
 
-	if (InputManager::getInstance()->KeyIsPressed('S'))
+	if (InputManager::getInstance()->isKeyPressed('S') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_A))
 	{
 		pos += (-newDirection * moveRate);
 	}
 
-	if (InputManager::getInstance()->KeyIsPressed('A'))
+	if (InputManager::getInstance()->isKeyPressed('A') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_X))
 	{
 		pos += (lrVector * moveRate);
 	}
 
-	if (InputManager::getInstance()->KeyIsPressed('D'))
+	if (InputManager::getInstance()->isKeyPressed('D') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_B))
 	{
 		pos += (-lrVector * moveRate);
 	}
 
-	if (InputManager::getInstance()->KeyIsPressed(VK_SPACE))
+	if (InputManager::getInstance()->isKeyPressed(VK_SPACE) || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_UP))
 	{
 		pos += (up * moveRate);
 	}
 
-	if (InputManager::getInstance()->KeyIsPressed('X'))
+	if (InputManager::getInstance()->isKeyPressed('X') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_DOWN))
 	{
 		pos += (-up * moveRate);
 	}

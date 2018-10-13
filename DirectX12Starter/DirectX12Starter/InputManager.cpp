@@ -13,7 +13,7 @@ InputManager::~InputManager()
 	
 }
 
-bool InputManager::KeyIsPressed(const unsigned char keyCode)
+bool InputManager::isKeyPressed(const unsigned char keyCode)
 {
 	return keyStates[keyCode];
 }
@@ -62,4 +62,58 @@ void InputManager::DisableAutoRepeatKeys()
 bool InputManager::isKeysAutoRepeat()
 {
 	return autoRepeatKeys;
+}
+
+void InputManager::UpdateController()
+{
+	DWORD dwResult;
+	for (DWORD i = 0; i < 1; i++) // loop 1 since we are using only one controller for now  // in future 'XUSER_MAX_COUNT' if using multiple controllers
+	{							
+		XINPUT_STATE state;
+		ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+		// Simply get the state of the controller from XInput.
+		dwResult = XInputGetState(i, &state);
+
+		if (dwResult == ERROR_SUCCESS)
+		{
+			if (previousControllerState != state.dwPacketNumber)
+			{
+				gameController = state.Gamepad;
+			}
+		}
+		else
+		{
+			// Controller is not connected 
+		}
+	}
+}
+
+bool InputManager::isControllerButtonPressed(WORD keyCode)
+{
+	if (gameController.wButtons & keyCode)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+SHORT InputManager::getLeftStickX()
+{
+	return gameController.sThumbLX;
+}
+
+SHORT InputManager::getLeftStickY()
+{
+	return gameController.sThumbLY;
+}
+SHORT InputManager::getRightStickX()
+{
+	return gameController.sThumbRX;
+}
+
+SHORT InputManager::getRightStickY()
+{
+	return gameController.sThumbRY;
 }
