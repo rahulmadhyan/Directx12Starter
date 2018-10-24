@@ -5,6 +5,7 @@
 #include "FrameResource.h"
 #include "Renderable.h"
 #include "GeometryGenerator.h"
+#include "SystemData.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -44,6 +45,8 @@ private:
 	UINT PassCbvOffset = 0;
 
 	Camera mainCamera;
+
+	SystemData *systemData;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;

@@ -2,6 +2,7 @@
 #include "d3dUtil.h"
 #include "MathHelper.h"
 #include "UploadBuffer.h"
+#include "Vertex.h"
 
 struct ObjectConstants
 {
@@ -12,12 +13,6 @@ struct PassConstants
 {
 	DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 Proj = MathHelper::Identity4x4();
-};
-
-struct Vertex
-{
-	DirectX::XMFLOAT3 Position;
-	DirectX::XMFLOAT4 Color;
 };
 
 // stores the resources needed for the CPU to build the command lists for a frame 
