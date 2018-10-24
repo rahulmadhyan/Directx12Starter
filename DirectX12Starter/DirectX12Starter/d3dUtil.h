@@ -28,7 +28,7 @@
 #include "d3dx12.h"
 #include "MathHelper.h"
 
-extern const int gNumFrameResources;
+extern const int gNumberFrameResources;
 
 inline void d3dSetDebugName(IDXGIObject* obj, const char* name)
 {
@@ -164,17 +164,22 @@ struct MeshGeometry
 	// System memory copies.  Use Blobs because the vertex/index format can be generic.
 	// It is up to the client to cast appropriately.  
 	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferColorCPU = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferColorGPU = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferColorUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
 	// Data about the buffers.
 	UINT VertexByteStride = 0;
+	UINT VertexByteColorStride = 0;
 	UINT VertexBufferByteSize = 0;
+	UINT VertexBufferColorByteSize = 0;
 	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 	UINT IndexBufferByteSize = 0;
 
@@ -189,6 +194,16 @@ struct MeshGeometry
 		vbv.BufferLocation = VertexBufferGPU->GetGPUVirtualAddress();
 		vbv.StrideInBytes = VertexByteStride;
 		vbv.SizeInBytes = VertexBufferByteSize;
+
+		return vbv;
+	}
+
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferColorView()const
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbv;
+		vbv.BufferLocation = VertexBufferColorGPU->GetGPUVirtualAddress();
+		vbv.StrideInBytes = VertexByteColorStride;
+		vbv.SizeInBytes = VertexBufferColorByteSize;
 
 		return vbv;
 	}
@@ -253,7 +268,7 @@ struct Material
 	// Because we have a material constant buffer for each FrameResource, we have to apply the
 	// update to each FrameResource.  Thus, when we modify a material we should set 
 	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty = gNumFrameResources;
+	int NumFramesDirty = gNumberFrameResources;
 
 	// Material constant buffer data used for shading.
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
