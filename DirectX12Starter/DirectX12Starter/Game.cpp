@@ -11,6 +11,17 @@ Game::~Game()
 {
 	if (Device != nullptr)
 		FlushCommandQueue();
+
+	delete systemData;
+	systemData = 0;
+
+	delete inputManager;
+	
+	for (auto r : renderables)
+	{
+		delete r;
+		r = 0;
+	}
 }
 
 bool Game::Initialize()
@@ -21,9 +32,11 @@ bool Game::Initialize()
 	// reset the command list to prep for initialization commands
 	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), nullptr));
 
+	systemData = new SystemData();
+
 	mainCamera = Camera(screenWidth, screenHeight);
 
-	systemData = new SystemData();
+	inputManager = InputManager::getInstance();
 
 	BuildRootSignature();
 	BuildShadersAndInputLayout();

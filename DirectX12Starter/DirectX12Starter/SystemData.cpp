@@ -15,6 +15,9 @@ SystemData::SystemData()
 
 SystemData::~SystemData()
 {
+	delete[] indices;
+	indices = 0;
+
 	delete[] positions;
 	positions = 0;
 

@@ -46,6 +46,8 @@ private:
 
 	Camera mainCamera;
 
+	InputManager* inputManager;
+
 	SystemData *systemData;
 
 	virtual void Resize()override;
