@@ -86,7 +86,6 @@ void Game::Draw(const Timer &timer)
 	// Reusing the command list reuses memory.
 	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["opaque"].Get()));
 	
-
 	CommandList->RSSetViewports(1, &ScreenViewPort);
 	CommandList->RSSetScissorRects(1, &ScissorRect);
 
@@ -406,15 +405,21 @@ void Game::BuildGeometry()
 	box1Submesh.StartIndexLocation = systemData->subSystemData["box1"].baseLocation;
 	box1Submesh.BaseVertexLocation = systemData->subSystemData["box1"].baseLocation;
 
+	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
+	SubmeshGeometry cylinderSubmesh;
+	cylinderSubmesh.IndexCount = (UINT)systemData->subSystemData["cylinder"].count;
+	cylinderSubmesh.StartIndexLocation = systemData->subSystemData["cylinder"].baseLocation;
+	cylinderSubmesh.BaseVertexLocation = systemData->subSystemData["cylinder"].baseLocation;
+
 	std::vector<Vertex> vertices(systemData->currentBaseLocation);
 	std::vector<std::uint16_t> indices(systemData->currentBaseLocation);
 	UINT k = 0;
 
 	for (size_t i = 0; i < systemData->currentBaseLocation; ++i, ++k)
 	{
-		vertices[k].Position = systemData->positions[systemData->subSystemData["box1"].baseLocation + i];
+		vertices[k].Position = systemData->positions[i];
 		vertices[k].Color = XMFLOAT4(DirectX::Colors::ForestGreen);
-		indices[k] = systemData->indices[systemData->subSystemData["box1"].baseLocation + i];
+		indices[k] = systemData->indices[i];
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -441,6 +446,7 @@ void Game::BuildGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["box1"] = box1Submesh;
+	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 
 	Geometries[geo->Name] = std::move(geo);
 }
@@ -496,15 +502,15 @@ void Game::BuildRenderables()
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box1"].BaseVertexLocation;
 	renderables.push_back(std::move(boxRitem));
 
-	//auto gridRitem = new Renderable;
-	//gridRitem->World = MathHelper::Identity4x4();
-	//gridRitem->ObjCBIndex = 1;
-	//gridRitem->Geo = Geometries["shapeGeo"].get();
-	//gridRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
-	//gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-	//gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-	//renderables.push_back(std::move(gridRitem));
+	auto cylinderRitem = new Renderable;
+	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(2.0f, 4.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));	
+	cylinderRitem->ObjCBIndex = 1;
+	cylinderRitem->Geo = Geometries["shapeGeo"].get();
+	cylinderRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs["cylinder"].IndexCount;
+	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	renderables.push_back(std::move(cylinderRitem));
 
 	//UINT objCBIndex = 2;
 	//for (int i = 0; i < 5; ++i)
