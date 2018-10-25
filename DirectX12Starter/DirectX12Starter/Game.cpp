@@ -89,15 +89,13 @@ void Game::Update(const Timer &timer)
 
 void Game::Draw(const Timer &timer)
 {
-	auto cmdListAlloc = currentFrameResource->commandListAllocator;
+	auto currentCommandListAllocator = currentFrameResource->commandListAllocator;
 
 	// Reuse the memory associated with command recording.
 	// We can only reset when the associated command lists have finished execution on the GPU.
-	ThrowIfFailed(cmdListAlloc->Reset());
+	ThrowIfFailed(currentCommandListAllocator->Reset());
 
-	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
-	// Reusing the command list reuses memory.
-	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["opaque"].Get()));
+	ThrowIfFailed(CommandList->Reset(currentCommandListAllocator.Get(), PSOs["opaque"].Get()));
 	
 	CommandList->RSSetViewports(1, &ScreenViewPort);
 	CommandList->RSSetScissorRects(1, &ScissorRect);
