@@ -29,14 +29,14 @@ public:
 	SystemData();
 	~SystemData();
 
-	uint16_t GetCurrentBaseLocation() const;
+	const uint16_t GetCurrentBaseLocation();
 	
-	uint32_t* GetIndices() const;
+	const uint32_t* GetIndices();
 
-	XMFLOAT3* GetPositions() const;
-	XMFLOAT4* GetColors() const;
-	XMFLOAT3* GetNormals() const;
-	XMFLOAT2* GetUvs() const;
+	const XMFLOAT3* GetPositions();
+	const XMFLOAT4* GetColors();
+	const XMFLOAT3* GetNormals();
+	const XMFLOAT2* GetUvs();
 
 	SubSystem GetSubSystem(char* subSystemName) const;
 

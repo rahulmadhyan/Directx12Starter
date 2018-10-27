@@ -31,32 +31,32 @@ SystemData::~SystemData()
 	uvs = 0;
 }
 
-uint16_t SystemData::GetCurrentBaseLocation() const
+const uint16_t SystemData::GetCurrentBaseLocation()
 {
 	return currentBaseLocation;
 }
 
-uint32_t* SystemData::GetIndices() const
+const uint32_t* SystemData::GetIndices() 
 {
 	return indices;
 }
 
-XMFLOAT3* SystemData::GetPositions() const
+const XMFLOAT3* SystemData::GetPositions() 
 {
 	return positions;
 }
 
-XMFLOAT4* SystemData::GetColors() const
+const XMFLOAT4* SystemData::GetColors() 
 {
 	return colors;
 }
 
-XMFLOAT3* SystemData::GetNormals() const
+const XMFLOAT3* SystemData::GetNormals()
 {
 	return normals;
 }
 
-XMFLOAT2* SystemData::GetUvs() const
+const XMFLOAT2* SystemData::GetUvs()
 {
 	return uvs;
 }

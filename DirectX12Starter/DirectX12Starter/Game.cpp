@@ -320,16 +320,18 @@ void Game::BuildGeometry()
 	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseLocation;
 	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseLocation;
 
-	std::vector<Vertex> vertices(systemData->GetCurrentBaseLocation());
-	std::vector<std::uint16_t> indices(systemData->GetCurrentBaseLocation());
+	const uint16_t systemDataSize = systemData->GetCurrentBaseLocation();
+
+	std::vector<Vertex> vertices(systemDataSize);
+	std::vector<std::uint16_t> indices(systemDataSize);
 	UINT k = 0;
 
-	XMFLOAT3* systemPositions = systemData->GetPositions();
-	XMFLOAT4* systemColors = systemData->GetColors();
+	const XMFLOAT3* systemPositions = systemData->GetPositions();
+	const XMFLOAT4* systemColors = systemData->GetColors();
 
-	uint32_t* systemIndices = systemData->GetIndices();
+	const uint32_t* systemIndices = systemData->GetIndices();
 
-	for (size_t i = 0; i < systemData->GetCurrentBaseLocation(); ++i, ++k)
+	for (size_t i = 0; i < systemDataSize; ++i, ++k)
 	{
 		vertices[k].Position = systemPositions[i];
 		vertices[k].Color = systemColors[i];
