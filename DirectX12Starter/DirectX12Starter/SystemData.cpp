@@ -31,6 +31,41 @@ SystemData::~SystemData()
 	uvs = 0;
 }
 
+uint16_t SystemData::GetCurrentBaseLocation() const
+{
+	return currentBaseLocation;
+}
+
+uint32_t* SystemData::GetIndices() const
+{
+	return indices;
+}
+
+XMFLOAT3* SystemData::GetPositions() const
+{
+	return positions;
+}
+
+XMFLOAT4* SystemData::GetColors() const
+{
+	return colors;
+}
+
+XMFLOAT3* SystemData::GetNormals() const
+{
+	return normals;
+}
+
+XMFLOAT2* SystemData::GetUvs() const
+{
+	return uvs;
+}
+
+SubSystem SystemData::GetSubSystem(char* subSystemName) const
+{
+	return subSystemData.at(subSystemName);
+}
+
 void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName)
 {
 	SubSystem newSubSystem;

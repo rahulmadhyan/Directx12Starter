@@ -52,7 +52,7 @@ bool Game::Initialize()
 	ID3D12CommandList* cmdsLists[] = { CommandList.Get() };
 	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-	// Wait until initialization is complete.
+	// wait until initialization is complete
 	FlushCommandQueue();
 		
 	return true;
@@ -91,8 +91,8 @@ void Game::Draw(const Timer &timer)
 {
 	auto currentCommandListAllocator = currentFrameResource->commandListAllocator;
 
-	// Reuse the memory associated with command recording.
-	// We can only reset when the associated command lists have finished execution on the GPU.
+	// reuse the memory associated with command recording
+	// we can only reset when the associated command lists have finished execution on the GPU
 	ThrowIfFailed(currentCommandListAllocator->Reset());
 
 	ThrowIfFailed(CommandList->Reset(currentCommandListAllocator.Get(), PSOs["opaque"].Get()));
@@ -100,15 +100,15 @@ void Game::Draw(const Timer &timer)
 	CommandList->RSSetViewports(1, &ScreenViewPort);
 	CommandList->RSSetScissorRects(1, &ScissorRect);
 
-	// Indicate a state transition on the resource usage.
+	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	// Clear the back buffer and depth buffer.
+	// clear the back buffer and depth buffer
 	CommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
 	CommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-	// Specify the buffers we are going to render to.
+	// specify the buffers we are going to render to
 	CommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 	ID3D12DescriptorHeap* descriptorHeaps[] = { CBVHeap.Get() };
@@ -123,27 +123,27 @@ void Game::Draw(const Timer &timer)
 
 	DrawRenderables(CommandList.Get());
 
-	// Indicate a state transition on the resource usage.
+	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	// Done recording commands.
+	// done recording commands
 	ThrowIfFailed(CommandList->Close());
 
-	// Add the command list to the queue for execution.
+	// add the command list to the queue for execution
 	ID3D12CommandList* cmdsLists[] = { CommandList.Get() };
 	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-	// Swap the back and front buffers
+	// wwap the back and front buffers
 	ThrowIfFailed(SwapChain->Present(0, 0));
 	currentBackBuffer = (currentBackBuffer + 1) % SwapChainBufferCount;
 
-	// Advance the fence value to mark commands up to this fence point.
+	// advance the fence value to mark commands up to this fence point
 	currentFrameResource->Fence = ++currentFence;
 
-	// Add an instruction to the command queue to set a new fence point. 
-	// Because we are on the GPU timeline, the new fence point won't be 
-	// set until the GPU finishes processing all the commands prior to this Signal().
+	// add an instruction to the command queue to set a new fence point.
+	// because we are on the GPU timeline, the new fence point won't be 
+	// set until the GPU finishes processing all the commands prior to this Signal()
 	CommandQueue->Signal(Fence.Get(), currentFence);
 }
 
@@ -306,131 +306,34 @@ void Game::BuildShadersAndInputLayout()
 
 void Game::BuildGeometry()
 {
-	//GeometryGenerator geoGen;
-	//GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	//GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
-	//GeometryGenerator::MeshData sphere = geoGen.CreateSphere(0.5f, 20, 20);
-	//GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-
-	////
-	//// We are concatenating all the geometry into one big vertex/index buffer.  So
-	//// define the regions in the buffer each submesh covers.
-	////
-
-	//// Cache the vertex offsets to each object in the concatenated vertex buffer.
-	//UINT boxVertexOffset = 0;
-	//UINT gridVertexOffset = (UINT)box.Vertices.size();
-	//UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
-	//UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
-	//UINT box1VertexOffset = cylinderVertexOffset + systemData->subSystemData["box1"].count;
-
-	//// Cache the starting index for each object in the concatenated index buffer.
-	//UINT boxIndexOffset = 0;
-	//UINT gridIndexOffset = (UINT)box.Indices32.size();
-	//UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
-	//UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
-	//UINT box1IndexOffset = cylinderIndexOffset + systemData->subSystemData["box1"].count;
-
-	//// Define the SubmeshGeometry that cover different 
-	//// regions of the vertex/index buffers.
-
-	//SubmeshGeometry boxSubmesh;
-	//boxSubmesh.IndexCount = (UINT)box.Indices32.size();
-	//boxSubmesh.StartIndexLocation = boxIndexOffset;
-	//boxSubmesh.BaseVertexLocation = boxVertexOffset;
-
-	//SubmeshGeometry gridSubmesh;
-	//gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
-	//gridSubmesh.StartIndexLocation = gridIndexOffset;
-	//gridSubmesh.BaseVertexLocation = gridVertexOffset;
-
-	//SubmeshGeometry sphereSubmesh;
-	//sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
-	//sphereSubmesh.StartIndexLocation = sphereIndexOffset;
-	//sphereSubmesh.BaseVertexLocation = sphereVertexOffset;
-
-	//SubmeshGeometry cylinderSubmesh;
-	//cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
-	//cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
-	//cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
-
-	//SubmeshGeometry box1Submesh;
-	//box1Submesh.IndexCount = (UINT)systemData->subSystemData["box1"].count;
-	//box1Submesh.StartIndexLocation = box1IndexOffset;
-	//box1Submesh.BaseVertexLocation = box1VertexOffset;
-
-	////
-	//// Extract the vertex elements we are interested in and pack the
-	//// vertices of all the meshes into one vertex buffer.
-	////
-
-	//auto totalVertexCount =
-	//	box.Vertices.size() +
-	//	grid.Vertices.size() +
-	//	sphere.Vertices.size() +
-	//	cylinder.Vertices.size() +
-	//	systemData->subSystemData["box1"].count;
-
-	//std::vector<Vertex> vertices(totalVertexCount);
-
-	//UINT k = 0;
-	//for (size_t i = 0; i < box.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Position = box.Vertices[i].Position;
-	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::DarkGreen);
-	//}
-
-	//for (size_t i = 0; i < grid.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Position = grid.Vertices[i].Position;
-	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::ForestGreen);
-	//}
-
-	//for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Position = sphere.Vertices[i].Position;
-	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::Crimson);
-	//}
-
-	//for (size_t i = 0; i < cylinder.Vertices.size(); ++i, ++k)
-	//{
-	//	vertices[k].Position = cylinder.Vertices[i].Position;
-	//	vertices[k].Color = XMFLOAT4(DirectX::Colors::SteelBlue);
-	//}
-
-	//for (size_t i = 0; i < systemData->subSystemData["box1"].count; ++i, ++k)
-	//{
-	//	vertices[k].Position = systemData->positions[systemData->subSystemData["box1"].baseLocation + i];
-	//	vertices[k].Color = systemData->colors[systemData->subSystemData["box1"].baseLocation + i];
-	//}
-
-	//std::vector<std::uint16_t> indices;
-	//indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
-	//indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
-	//indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
-	//indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
-
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
 	SubmeshGeometry box1Submesh;
-	box1Submesh.IndexCount = (UINT)systemData->subSystemData["box1"].count;
-	box1Submesh.StartIndexLocation = systemData->subSystemData["box1"].baseLocation;
-	box1Submesh.BaseVertexLocation = systemData->subSystemData["box1"].baseLocation;
+	SubSystem box1SubSystem = systemData->GetSubSystem("box1");
+	box1Submesh.IndexCount = box1SubSystem.count;
+	box1Submesh.StartIndexLocation = box1SubSystem.baseLocation;
+	box1Submesh.BaseVertexLocation = box1SubSystem.baseLocation;
 
 	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
 	SubmeshGeometry cylinderSubmesh;
-	cylinderSubmesh.IndexCount = (UINT)systemData->subSystemData["cylinder"].count;
-	cylinderSubmesh.StartIndexLocation = systemData->subSystemData["cylinder"].baseLocation;
-	cylinderSubmesh.BaseVertexLocation = systemData->subSystemData["cylinder"].baseLocation;
+	SubSystem cylinderSubSystem = systemData->GetSubSystem("cylinder");
+	cylinderSubmesh.IndexCount = cylinderSubSystem.count;
+	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseLocation;
+	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseLocation;
 
-	std::vector<Vertex> vertices(systemData->currentBaseLocation);
-	std::vector<std::uint16_t> indices(systemData->currentBaseLocation);
+	std::vector<Vertex> vertices(systemData->GetCurrentBaseLocation());
+	std::vector<std::uint16_t> indices(systemData->GetCurrentBaseLocation());
 	UINT k = 0;
 
-	for (size_t i = 0; i < systemData->currentBaseLocation; ++i, ++k)
+	XMFLOAT3* systemPositions = systemData->GetPositions();
+	XMFLOAT4* systemColors = systemData->GetColors();
+
+	uint32_t* systemIndices = systemData->GetIndices();
+
+	for (size_t i = 0; i < systemData->GetCurrentBaseLocation(); ++i, ++k)
 	{
-		vertices[k].Position = systemData->positions[i];
-		vertices[k].Color = XMFLOAT4(DirectX::Colors::ForestGreen);
-		indices[k] = systemData->indices[i];
+		vertices[k].Position = systemPositions[i];
+		vertices[k].Color = systemColors[i];
+		indices[k] = systemIndices[i];
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -522,58 +425,6 @@ void Game::BuildRenderables()
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
 	renderables.push_back(std::move(cylinderRitem));
-
-	//UINT objCBIndex = 2;
-	//for (int i = 0; i < 5; ++i)
-	//{
-	//	auto leftCylRitem = new Renderable;
-	//	auto rightCylRitem = new Renderable;
-	//	auto leftSphereRitem = new Renderable;
-	//	auto rightSphereRitem = new Renderable;
-
-	//	XMMATRIX leftCylWorld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-	//	XMMATRIX rightCylWorld = XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-
-	//	XMMATRIX leftSphereWorld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-	//	XMMATRIX rightSphereWorld = XMMatrixTranslation(+5.0f, 3.5f, -10.0f + i * 5.0f);
-
-	//	XMStoreFloat4x4(&leftCylRitem->World, rightCylWorld);
-	//	leftCylRitem->ObjCBIndex = objCBIndex++;
-	//	leftCylRitem->Geo = Geometries["shapeGeo"].get();
-	//	leftCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftCylRitem->IndexCount = leftCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-	//	leftCylRitem->StartIndexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	//	leftCylRitem->BaseVertexLocation = leftCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&rightCylRitem->World, leftCylWorld);
-	//	rightCylRitem->ObjCBIndex = objCBIndex++;
-	//	rightCylRitem->Geo = Geometries["shapeGeo"].get();
-	//	rightCylRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightCylRitem->IndexCount = rightCylRitem->Geo->DrawArgs["cylinder"].IndexCount;
-	//	rightCylRitem->StartIndexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	//	rightCylRitem->BaseVertexLocation = rightCylRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&leftSphereRitem->World, leftSphereWorld);
-	//	leftSphereRitem->ObjCBIndex = objCBIndex++;
-	//	leftSphereRitem->Geo = Geometries["shapeGeo"].get();
-	//	leftSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	leftSphereRitem->IndexCount = leftSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-	//	leftSphereRitem->StartIndexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-	//	leftSphereRitem->BaseVertexLocation = leftSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-
-	//	XMStoreFloat4x4(&rightSphereRitem->World, rightSphereWorld);
-	//	rightSphereRitem->ObjCBIndex = objCBIndex++;
-	//	rightSphereRitem->Geo = Geometries["shapeGeo"].get();
-	//	rightSphereRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//	rightSphereRitem->IndexCount = rightSphereRitem->Geo->DrawArgs["sphere"].IndexCount;
-	//	rightSphereRitem->StartIndexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
-	//	rightSphereRitem->BaseVertexLocation = rightSphereRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
-
-	//	renderables.push_back(std::move(leftCylRitem));
-	//	renderables.push_back(std::move(rightCylRitem));
-	//	renderables.push_back(std::move(leftSphereRitem));
-	//	renderables.push_back(std::move(rightSphereRitem));
-	//}
 }
 
 void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)

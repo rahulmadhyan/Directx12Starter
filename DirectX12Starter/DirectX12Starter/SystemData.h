@@ -29,9 +29,20 @@ public:
 	SystemData();
 	~SystemData();
 
+	uint16_t GetCurrentBaseLocation() const;
+	
+	uint32_t* GetIndices() const;
+
+	XMFLOAT3* GetPositions() const;
+	XMFLOAT4* GetColors() const;
+	XMFLOAT3* GetNormals() const;
+	XMFLOAT2* GetUvs() const;
+
+	SubSystem GetSubSystem(char* subSystemName) const;
+
 	void LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName);
 
-public: //change
+private:
 	uint16_t currentBaseLocation;
 
 	uint32_t* indices;
