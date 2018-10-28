@@ -5,11 +5,11 @@ SystemData::SystemData()
 {
 	currentBaseLocation = 0;
 	
-	indices = new uint32_t[DATA_SIZE];
+	indices = new uint16_t[UINT16_MAX];
 
-	positions = new XMFLOAT3[DATA_SIZE];
-	normals = new XMFLOAT3[DATA_SIZE];
-	uvs = new XMFLOAT2[DATA_SIZE];
+	positions = new XMFLOAT3[UINT16_MAX];
+	normals = new XMFLOAT3[UINT16_MAX];
+	uvs = new XMFLOAT2[UINT16_MAX];
 }
 
 SystemData::~SystemData()
@@ -32,7 +32,7 @@ const uint16_t SystemData::GetCurrentBaseLocation()
 	return currentBaseLocation;
 }
 
-const uint32_t* SystemData::GetIndices() 
+const uint16_t* SystemData::GetIndices() 
 {
 	return indices;
 }

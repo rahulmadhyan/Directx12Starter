@@ -9,11 +9,9 @@
 
 using namespace DirectX;
 
-#define DATA_SIZE 65535
-
 struct SubSystem
 {
-	uint16_t baseLocation;
+	uint32_t baseLocation;
 	uint16_t count;
 
 	SubSystem()
@@ -31,7 +29,7 @@ public:
 
 	const uint16_t GetCurrentBaseLocation();
 	
-	const uint32_t* GetIndices();
+	const uint16_t* GetIndices();
 
 	const XMFLOAT3* GetPositions();
 	const XMFLOAT3* GetNormals();
@@ -44,7 +42,7 @@ public:
 private:
 	uint16_t currentBaseLocation;
 
-	uint32_t* indices;
+	uint16_t* indices;
 
 	XMFLOAT3* positions;
 	XMFLOAT3* normals;

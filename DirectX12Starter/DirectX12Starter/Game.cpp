@@ -70,7 +70,7 @@ void Game::Resize()
 void Game::Update(const Timer &timer)
 {
 	mainCamera.Update();
-
+	inputManager->UpdateController();
 	// Cycle through the circular frame resource array.
 	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
 	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
@@ -84,6 +84,8 @@ void Game::Update(const Timer &timer)
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
+
+	
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -116,12 +118,6 @@ void Game::Draw(const Timer &timer)
 
 	ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
 	CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
-
-	ID3D12DescriptorHeap* matDescriptorHeaps[] = { matCBVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(matDescriptorHeaps), matDescriptorHeaps);
-
-	ID3D12DescriptorHeap* srvDescriptorHeaps[] = { SRVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
 
 	CommandList->SetGraphicsRootSignature(rootSignature.Get());
 
@@ -477,7 +473,7 @@ void Game::BuildGeometry()
 	const XMFLOAT3* systemNormals = systemData->GetNormals();
 	const XMFLOAT2* systemUvs = systemData->GetUvs();
 
-	const uint32_t* systemIndices = systemData->GetIndices();
+	const uint16_t* systemIndices = systemData->GetIndices();
 
 	for (size_t i = 0; i < systemDataSize; ++i, ++k)
 	{
@@ -581,7 +577,7 @@ void Game::BuildMaterials()
 void Game::BuildRenderables()
 {
 	auto boxRitem = new Renderable;
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));
+	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(20.0f, 0.25f, 20.0f)*XMMatrixTranslation(0.0f, 0.0f, 0.0f));
 	boxRitem->ObjCBIndex = 0;
 	boxRitem->Geo = Geometries["shapeGeo"].get();
 	boxRitem->Mat = Materials["demo1"].get();
@@ -592,7 +588,7 @@ void Game::BuildRenderables()
 	renderables.push_back(std::move(boxRitem));
 
 	auto cylinderRitem = new Renderable;
-	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(2.0f, 4.0f, 2.0f)*XMMatrixTranslation(3.0f, 0.5f, 0.0f));	
+	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(1.0f, 4.0f, 1.0f)*XMMatrixTranslation(3.0f, 2.0f, 0.0f));	
 	cylinderRitem->ObjCBIndex = 1;
 	cylinderRitem->Geo = Geometries["shapeGeo"].get();
 	cylinderRitem->Mat = Materials["demo2"].get();
@@ -620,21 +616,32 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 		cmdList->IASetIndexBuffer(&r->Geo->IndexBufferView());
 		cmdList->IASetPrimitiveTopology(r->PrimitiveType);
 
+		ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
+
 		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
 		UINT objCBVIndex = currentFrameResourceIndex * (UINT)renderables.size() + r->ObjCBIndex;
 		auto objCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
 		objCBVHandle.Offset(objCBVIndex, CBVSRVUAVDescriptorSize);
 
+		cmdList->SetGraphicsRootDescriptorTable(0, objCBVHandle);
+
+		ID3D12DescriptorHeap* matDescriptorHeaps[] = { matCBVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(matDescriptorHeaps), matDescriptorHeaps);
+
 		UINT matCBVIndex = currentFrameResourceIndex * (UINT)Materials.size() + r->Mat->MatCBIndex;
 		auto matCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(matCBVHeap->GetGPUDescriptorHandleForHeapStart());
 		matCBVHandle.Offset(matCBVIndex, CBVSRVUAVDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(2, matCBVHandle);
+
+		ID3D12DescriptorHeap* srvDescriptorHeaps[] = { SRVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
 
 		UINT srvIndex = r->Mat->DiffuseSrvHeapIndex;
 		auto srvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVHeap->GetGPUDescriptorHandleForHeapStart());
 		srvHandle.Offset(srvIndex, CBVSRVUAVDescriptorSize);
 
-		cmdList->SetGraphicsRootDescriptorTable(0, objCBVHandle);
-		cmdList->SetGraphicsRootDescriptorTable(2, matCBVHandle);
 		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
 		cmdList->DrawIndexedInstanced(r->IndexCount, 1, r->StartIndexLocation, r->BaseVertexLocation, 0);
