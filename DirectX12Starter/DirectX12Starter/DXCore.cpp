@@ -367,6 +367,8 @@ bool DXCore::InitMainWindow()
 	ShowWindow(mainWindowHandle, SW_SHOW);
 	UpdateWindow(mainWindowHandle);
 
+	timer = Timer(mainWindowHandle, MainWindowCaption.c_str());
+
 	return true;
 }
 
