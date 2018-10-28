@@ -38,9 +38,11 @@ bool Game::Initialize()
 
 	inputManager = InputManager::getInstance();
 
+	BuildTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
+	BuildMaterials();
 	BuildRenderables();
 	BuildFrameResources();
 	BuildDescriptorHeaps();
@@ -85,6 +87,7 @@ void Game::Update(const Timer &timer)
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
+	UpadteMaterialCBs(timer);
 }
 
 void Game::Draw(const Timer &timer)
@@ -111,8 +114,14 @@ void Game::Draw(const Timer &timer)
 	// specify the buffers we are going to render to
 	CommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { CBVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
+	CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
+
+	ID3D12DescriptorHeap* matDescriptorHeaps[] = { matCBVHeap.Get() };
+	CommandList->SetDescriptorHeaps(_countof(matDescriptorHeaps), matDescriptorHeaps);
+
+	ID3D12DescriptorHeap* srvDescriptorHeaps[] = { SRVHeap.Get() };
+	CommandList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
 
 	CommandList->SetGraphicsRootSignature(rootSignature.Get());
 
@@ -157,9 +166,11 @@ void Game::UpdateObjectCBs(const Timer & timer)
 		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX textureTransform = XMLoadFloat4x4(&e->TextureTransform);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&objConstants.TextureTransform, XMMatrixTranspose(textureTransform));
 
 			currentObjectCB->CopyData(e->ObjCBIndex, objConstants);
 
@@ -183,24 +194,98 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	currPassCB->CopyData(0, MainPassCB);
 }
 
+void Game::UpadteMaterialCBs(const Timer& timet)
+{
+	auto currentMaterialCB = currentFrameResource->MaterialCB.get();
+	for (auto& e : Materials)
+	{
+		// Only update the cbuffer data if the constants have changed.  If the cbuffer
+		// data changes, it needs to be updated for each FrameResource.
+		Material* mat = e.second.get();
+		if (mat->NumFramesDirty > 0)
+		{
+			XMMATRIX materialTransform = XMLoadFloat4x4(&mat->MatTransform);
+
+			MaterialConstants materialConstants;
+			materialConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
+			materialConstants.FresnelR0 = mat->FresnelR0;
+			materialConstants.Roughness = mat->Roughness;
+			XMStoreFloat4x4(&materialConstants.MatTransform, XMMatrixTranspose(materialTransform));
+
+			currentMaterialCB->CopyData(mat->MatCBIndex, materialConstants);
+
+			// Next FrameResource need to be updated too.
+			mat->NumFramesDirty--;
+		}
+	}
+}
+
+void Game::BuildTextures()
+{
+	auto demo1Texture = std::make_unique<Texture>();
+	demo1Texture->Name = "demo1";
+	demo1Texture->Filename = L"Resources/Textures/Demo1.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), demo1Texture->Filename.c_str(),
+		demo1Texture->Resource,
+		demo1Texture->UploadHeap));
+
+	Textures[demo1Texture->Name] = std::move(demo1Texture);
+
+	auto demo2Texture = std::make_unique<Texture>();
+	demo2Texture->Name = "demo2";
+	demo2Texture->Filename = L"Resources/Textures/Demo2.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), demo2Texture->Filename.c_str(),
+		demo2Texture->Resource,
+		demo2Texture->UploadHeap));
+
+	Textures[demo2Texture->Name] = std::move(demo2Texture);
+}
+
 void Game::BuildDescriptorHeaps()
 {
+	// build constant buffer heap for objects
 	UINT objCount = (UINT)renderables.size();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
-	UINT numDescriptors = (objCount + 1) * gNumberFrameResources;
+	UINT objNumberDescriptors = (objCount + 1) * gNumberFrameResources;
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
 	PassCbvOffset = objCount * gNumberFrameResources;
 
-	D3D12_DESCRIPTOR_HEAP_DESC CBVHeapDesc;
-	CBVHeapDesc.NumDescriptors = numDescriptors;
-	CBVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	CBVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	CBVHeapDesc.NodeMask = 0;
-	ThrowIfFailed(Device->CreateDescriptorHeap(&CBVHeapDesc,
+	D3D12_DESCRIPTOR_HEAP_DESC objCBVHeapDesc;
+	objCBVHeapDesc.NumDescriptors = objNumberDescriptors;
+	objCBVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	objCBVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	objCBVHeapDesc.NodeMask = 0;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&objCBVHeapDesc,
 		IID_PPV_ARGS(&CBVHeap)));
+
+	// build constant buffer heap for materials
+	UINT matCount = (UINT)Materials.size();
+
+	UINT matNumberDescriptors = matCount * gNumberFrameResources;
+
+	D3D12_DESCRIPTOR_HEAP_DESC matCBVHeapDesc;
+	matCBVHeapDesc.NumDescriptors = matNumberDescriptors;
+	matCBVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	matCBVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	matCBVHeapDesc.NodeMask = 0;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&matCBVHeapDesc,
+		IID_PPV_ARGS(&matCBVHeap)));
+
+	// build SRV heap for textures
+	UINT textureCount = (UINT)Textures.size();
+
+	D3D12_DESCRIPTOR_HEAP_DESC SRVHeapDesc;
+	SRVHeapDesc.NumDescriptors = textureCount;
+	SRVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	SRVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	SRVHeapDesc.NodeMask = 0;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&SRVHeapDesc, IID_PPV_ARGS(&SRVHeap)));
+
 }
 
 void Game::BuildConstantBufferViews()
@@ -252,6 +337,55 @@ void Game::BuildConstantBufferViews()
 
 		Device->CreateConstantBufferView(&cbvDesc, handle);
 	}
+
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+	UINT matCount = (UINT)Materials.size();
+
+	// Last three descriptors are the pass CBVs for each frame resource.
+	for (int frameIndex = 0; frameIndex < gNumberFrameResources; ++frameIndex)
+	{
+		auto matCB = FrameResources[frameIndex]->MaterialCB->Resource();
+		for (UINT i = 0; i < matCount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = matCB->GetGPUVirtualAddress();
+
+			// Offset to the ith object constant buffer in the buffer.
+			cbAddress += i * matCBByteSize;
+
+			// Offset to the object cbv in the descriptor heap.
+			int heapIndex = frameIndex * matCount + i;
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(matCBVHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, CBVSRVUAVDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC matCBVDesc;
+			matCBVDesc.BufferLocation = cbAddress;
+			matCBVDesc.SizeInBytes = objCBByteSize;
+
+			Device->CreateConstantBufferView(&matCBVDesc, handle);
+		}
+	}
+
+	int SRVHeapIndex = 0;
+	// creating descriptors for each SRV
+	for (auto it = Textures.begin(); it != Textures.end(); ++it)
+	{
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(SRVHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(SRVHeapIndex, CBVSRVUAVDescriptorSize);
+
+		auto texture = it->second->Resource;
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+		SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SRVDesc.Format = texture->GetDesc().Format;
+		SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		SRVDesc.Texture2D.MostDetailedMip = 0;
+		SRVDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+		SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+		Device->CreateShaderResourceView(texture.Get(), &SRVDesc, handle);
+
+		SRVHeapIndex++;
+	}
 }
 
 void Game::BuildRootSignature()
@@ -262,15 +396,27 @@ void Game::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
 	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
+	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
+	cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE srvTable0;
+	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
 	// Create root CBVs.
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
+	slotRootParameter[3].InitAsDescriptorTable(1, &srvTable0, D3D12_SHADER_VISIBILITY_PIXEL);
+
+	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, 
+		(UINT)staticSamplers.size(),
+		staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
@@ -300,7 +446,8 @@ void Game::BuildShadersAndInputLayout()
 	inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -327,14 +474,16 @@ void Game::BuildGeometry()
 	UINT k = 0;
 
 	const XMFLOAT3* systemPositions = systemData->GetPositions();
-	const XMFLOAT4* systemColors = systemData->GetColors();
+	const XMFLOAT3* systemNormals = systemData->GetNormals();
+	const XMFLOAT2* systemUvs = systemData->GetUvs();
 
 	const uint32_t* systemIndices = systemData->GetIndices();
 
 	for (size_t i = 0; i < systemDataSize; ++i, ++k)
 	{
 		vertices[k].Position = systemPositions[i];
-		vertices[k].Color = systemColors[i];
+		vertices[k].Normal = systemNormals[i];
+		vertices[k].UV = systemUvs[i];
 		indices[k] = systemIndices[i];
 	}
 
@@ -402,8 +551,31 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)renderables.size()));
+			1, (UINT)renderables.size(), Materials.size()));
 	}
+}
+
+void Game::BuildMaterials()
+{
+	auto demo1Material = std::make_unique<Material>();
+	demo1Material->Name = "demo1";
+	demo1Material->MatCBIndex = 0;
+	demo1Material->DiffuseSrvHeapIndex = 0;
+	demo1Material->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	demo1Material->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	demo1Material->Roughness = 0.2f;
+
+	Materials[demo1Material->Name] = std::move(demo1Material);
+
+	auto demo2Material = std::make_unique<Material>();
+	demo2Material->Name = "demo2";
+	demo2Material->MatCBIndex = 1;
+	demo2Material->DiffuseSrvHeapIndex = 1;
+	demo2Material->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	demo2Material->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	demo2Material->Roughness = 0.2f;
+
+	Materials[demo2Material->Name] = std::move(demo2Material);
 }
 
 void Game::BuildRenderables()
@@ -412,6 +584,7 @@ void Game::BuildRenderables()
 	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(2.0f, 2.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));
 	boxRitem->ObjCBIndex = 0;
 	boxRitem->Geo = Geometries["shapeGeo"].get();
+	boxRitem->Mat = Materials["demo1"].get();
 	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box1"].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box1"].StartIndexLocation;
@@ -419,9 +592,10 @@ void Game::BuildRenderables()
 	renderables.push_back(std::move(boxRitem));
 
 	auto cylinderRitem = new Renderable;
-	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(2.0f, 4.0f, 2.0f)*XMMatrixTranslation(0.0f, 0.5f, 0.0f));	
+	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(2.0f, 4.0f, 2.0f)*XMMatrixTranslation(3.0f, 0.5f, 0.0f));	
 	cylinderRitem->ObjCBIndex = 1;
 	cylinderRitem->Geo = Geometries["shapeGeo"].get();
+	cylinderRitem->Mat = Materials["demo2"].get();
 	cylinderRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs["cylinder"].IndexCount;
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
@@ -432,8 +606,10 @@ void Game::BuildRenderables()
 void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
 	auto objectCB = currentFrameResource->ObjectCB->Resource();
+	auto matCB = currentFrameResource->MaterialCB->Resource();
 
 	// For each render item...
 	for (size_t i = 0; i < renderables.size(); ++i)
@@ -445,12 +621,79 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 		cmdList->IASetPrimitiveTopology(r->PrimitiveType);
 
 		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
-		UINT cbvIndex = currentFrameResourceIndex * (UINT)renderables.size() + r->ObjCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, CBVSRVUAVDescriptorSize);
+		UINT objCBVIndex = currentFrameResourceIndex * (UINT)renderables.size() + r->ObjCBIndex;
+		auto objCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+		objCBVHandle.Offset(objCBVIndex, CBVSRVUAVDescriptorSize);
 
-		cmdList->SetGraphicsRootDescriptorTable(0, cbvHandle);
+		UINT matCBVIndex = currentFrameResourceIndex * (UINT)Materials.size() + r->Mat->MatCBIndex;
+		auto matCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(matCBVHeap->GetGPUDescriptorHandleForHeapStart());
+		matCBVHandle.Offset(matCBVIndex, CBVSRVUAVDescriptorSize);
+
+		UINT srvIndex = r->Mat->DiffuseSrvHeapIndex;
+		auto srvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVHeap->GetGPUDescriptorHandleForHeapStart());
+		srvHandle.Offset(srvIndex, CBVSRVUAVDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(0, objCBVHandle);
+		cmdList->SetGraphicsRootDescriptorTable(2, matCBVHandle);
+		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
 		cmdList->DrawIndexedInstanced(r->IndexCount, 1, r->StartIndexLocation, r->BaseVertexLocation, 0);
 	}
+}
+
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Game::GetStaticSamplers()
+{
+	// Applications usually only need a handful of samplers.  So just define them all up front
+	// and keep them available as part of the root signature.  
+
+	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
+		0, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
+		1, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+		2, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
+		3, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
+		4, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
+		0.0f,                             // mipLODBias
+		8);                               // maxAnisotropy
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
+		5, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+		0.0f,                              // mipLODBias
+		8);                                // maxAnisotropy
+
+	return {
+		pointWrap, pointClamp,
+		linearWrap, linearClamp,
+		anisotropicWrap, anisotropicClamp };
 }

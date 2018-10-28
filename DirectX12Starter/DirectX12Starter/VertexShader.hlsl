@@ -2,6 +2,7 @@
 cbuffer cbPerObject : register(b0)
 {
 	float4x4 world;
+	float4x4 textureTransform;
 };
 
 cbuffer cbPass : register(b1)
@@ -10,25 +11,40 @@ cbuffer cbPass : register(b1)
 	float4x4 projection;
 }
 
+cbuffer cbMaterial : register(b2)
+{
+	float4 diffuseAlbedo;
+	float3 fresnelR0;
+	float  roughness;
+	float4x4 materialTransform;
+};
+
 struct VS_INPUT
 {
-	float4 position : POSITION;
-	float4 color	: COLOR;
+	float3 Position		: POSITION;
+	float3 Normal		: NORMAL;
+	float2 UV			: TEXCOORD;
 };
 
 struct VS_OUTPUT
 {
-	float4 position : SV_POSITION;
-	float4 color	: COLOR;
+	float4 Position		: SV_POSITION;
+	float3 Normal		: NORMAL;
+	float2 UV			: TEXCOORD;
 };
 
 VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT output;
-	output.position = mul(input.position, world);
-	output.position = mul(output.position, view);
-	output.position = mul(output.position, projection);
 
-	output.color = input.color;
+	float4 outPos = mul( float4(input.Position, 1.0f), world);
+	matrix viewProjection = mul(view, projection);
+	output.Position = mul(outPos, viewProjection);
+
+	output.Normal = mul(input.Normal, (float3x3)world);
+
+	float4 textureCoordinates = mul(float4(input.UV, 0.0, 1.0f), textureTransform);
+	output.UV = mul(textureCoordinates, materialTransform).xy;
+
 	return output;
 }

@@ -6,6 +6,7 @@
 #include "Renderable.h"
 #include "GeometryGenerator.h"
 #include "SystemData.h"
+#include "DDSTextureLoader.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -29,11 +30,14 @@ private:
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
 	
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
-	ComPtr<ID3D12DescriptorHeap> SRVDescriptorHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> matCBVHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> SRVHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> Shaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> PSOs;
+	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 
@@ -56,7 +60,9 @@ private:
 
 	void UpdateObjectCBs(const Timer& timer);
 	void UpdateMainPassCB(const Timer& timer);
+	void UpadteMaterialCBs(const Timer& timet);
 
+	void BuildTextures();
 	void BuildDescriptorHeaps();
 	void BuildConstantBufferViews();
 	void BuildRootSignature();
@@ -64,7 +70,10 @@ private:
 	void BuildGeometry();
 	void BuildPSOs();
 	void BuildFrameResources();
+	void BuildMaterials();
 	void BuildRenderables();
 	void DrawRenderables(ID3D12GraphicsCommandList* cmdList);
+
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 };
 

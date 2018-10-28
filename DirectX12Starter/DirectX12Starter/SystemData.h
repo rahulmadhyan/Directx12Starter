@@ -34,7 +34,6 @@ public:
 	const uint32_t* GetIndices();
 
 	const XMFLOAT3* GetPositions();
-	const XMFLOAT4* GetColors();
 	const XMFLOAT3* GetNormals();
 	const XMFLOAT2* GetUvs();
 
@@ -48,7 +47,6 @@ private:
 	uint32_t* indices;
 
 	XMFLOAT3* positions;
-	XMFLOAT4* colors;
 	XMFLOAT3* normals;
 	XMFLOAT2* uvs;
 

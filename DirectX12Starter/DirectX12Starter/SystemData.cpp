@@ -8,7 +8,6 @@ SystemData::SystemData()
 	indices = new uint32_t[DATA_SIZE];
 
 	positions = new XMFLOAT3[DATA_SIZE];
-	colors = new XMFLOAT4[DATA_SIZE];
 	normals = new XMFLOAT3[DATA_SIZE];
 	uvs = new XMFLOAT2[DATA_SIZE];
 }
@@ -20,9 +19,6 @@ SystemData::~SystemData()
 
 	delete[] positions;
 	positions = 0;
-
-	delete[] colors;
-	colors = 0;
 
 	delete[] normals;
 	normals = 0;
@@ -44,11 +40,6 @@ const uint32_t* SystemData::GetIndices()
 const XMFLOAT3* SystemData::GetPositions() 
 {
 	return positions;
-}
-
-const XMFLOAT4* SystemData::GetColors() 
-{
-	return colors;
 }
 
 const XMFLOAT3* SystemData::GetNormals()
@@ -191,7 +182,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 			v3.Normal.z *= -1.0f;
 
 			positions[currentBaseLocation] = v1.Position;
-			colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 			normals[currentBaseLocation] = v1.Normal;
 			uvs[currentBaseLocation] = v1.UV;
 			currentBaseLocation += 1;
@@ -199,7 +189,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 			vertexCounter += 1;
 
 			positions[currentBaseLocation] = v3.Position;
-			colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 			normals[currentBaseLocation] = v3.Normal;
 			uvs[currentBaseLocation] = v3.UV;
 			currentBaseLocation += 1;
@@ -207,7 +196,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 			vertexCounter += 1;
 
 			positions[currentBaseLocation] = v2.Position;
-			colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 			normals[currentBaseLocation] = v2.Normal;
 			uvs[currentBaseLocation] = v2.UV;
 			currentBaseLocation += 1;
@@ -239,7 +227,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 				v4.Normal.z *= -1.0f;
 
 				positions[currentBaseLocation] = v1.Position;
-				colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 				normals[currentBaseLocation] = v1.Normal;
 				uvs[currentBaseLocation] = v1.UV;
 				currentBaseLocation += 1;
@@ -247,7 +234,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 				vertexCounter += 1;
 
 				positions[currentBaseLocation] = v4.Position;
-				colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 				normals[currentBaseLocation] = v4.Normal;
 				uvs[currentBaseLocation] = v4.UV;
 				currentBaseLocation += 1;
@@ -255,7 +241,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 				vertexCounter += 1;
 
 				positions[currentBaseLocation] = v3.Position;
-				colors[currentBaseLocation] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 				normals[currentBaseLocation] = v3.Normal;
 				uvs[currentBaseLocation] = v3.UV;
 				currentBaseLocation += 1;
