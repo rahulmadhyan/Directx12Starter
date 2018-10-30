@@ -85,7 +85,22 @@ void Game::Update(const Timer &timer)
 		CloseHandle(eventHandle);
 	}
 
-	
+	XMMATRIX v = XMLoadFloat4x4(&renderables[1]->World);
+	float x = 0;
+	if (inputManager->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_LEFT))
+		x--;
+	if (inputManager->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_RIGHT))
+		x++;
+
+	float z = 0;
+	if (inputManager->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_UP))
+		z++;
+	if (inputManager->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_DOWN))
+		z--;
+
+	v = XMMatrixMultiply(v, XMMatrixTranslation(x * 0.01, 0, z * 0.01));
+	XMStoreFloat4x4(&renderables[1]->World, v);
+	renderables[1]->NumFramesDirty = gNumberFrameResources;
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);

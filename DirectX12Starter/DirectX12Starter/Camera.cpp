@@ -7,7 +7,7 @@ Camera::Camera()
 
 Camera::Camera(unsigned int width, unsigned int height)
 {
-	XMVECTOR pos = XMVectorSet(0, 0, -5, 0);
+	XMVECTOR pos = XMVectorSet(-0.225, 3, -17.5, 0);
 	XMVECTOR dir = XMVectorSet(0, 0, 1, 0);
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 
@@ -89,12 +89,12 @@ void Camera::Update()
 		pos += (-lrVector * moveRate);
 	}
 
-	if (InputManager::getInstance()->isKeyPressed(VK_SPACE) || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_UP))
+	if (InputManager::getInstance()->isKeyPressed(VK_SPACE))
 	{
 		pos += (up * moveRate);
 	}
 
-	if (InputManager::getInstance()->isKeyPressed('X') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_DPAD_DOWN))
+	if (InputManager::getInstance()->isKeyPressed('X'))
 	{
 		pos += (-up * moveRate);
 	}
