@@ -1,6 +1,28 @@
+#include "LightingUtil.h"
 
 Texture2D    diffuseMap : register(t0);
 SamplerState sampleLinear  : register(s0);
+
+cbuffer cbPass : register(b1)
+{
+	float4x4 view;
+	float4x4 invView;
+	float4x4 proj;
+	float4x4 pnvProj;
+	float4x4 viewProj;
+	float4x4 invViewProj;
+	float3 eyePosW;
+	float cbPerObjectPad1;
+	float2 renderTargetSize;
+	float2 invRenderTargetSize;
+	float nearZ;
+	float farZ;
+	float totalTime;
+	float deltaTime;
+	float4 ambientLight;
+
+	Light lights[MaxLights];
+}
 
 cbuffer cbMaterial : register(b2)
 {
@@ -19,7 +41,21 @@ struct VS_OUTPUT
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-	float4 color = diffuseMap.Sample(sampleLinear, input.UV);
+	input.Normal = normalize(input.Normal);
 
-	return color;
+	float toEyeNormal = normalize(eyePosW - input.Position);
+
+	// ambient light
+	float4 ambient = ambientLight * diffuseAlbedo;
+
+	const float shininess = 1.0f - roughness;
+	Material mat = { diffuseAlbedo, fresnelR0, shininess };
+	float3 shadowFactor = 1.0f;
+	float4 directLight = ComputeLighting(lights, mat, input.Position, input.Normal, toEyeNormal, shadowFactor);
+
+	float4 litColor = ambient + directLight;
+
+	litColor.a = diffuseAlbedo.a;
+
+	return litColor;
 }

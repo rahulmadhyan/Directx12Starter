@@ -1,3 +1,17 @@
+// Defualts for number of lights.
+#ifndef NUM_DIR_LIGHTS
+	#define NUM_DIR_LIGHTS 3
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+	#define NUM_POINT_LIGHTS 3
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+	#define NUM_SPOT_LIGHTS 3
+#endif
+
+#include "LightingUtil.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -8,7 +22,22 @@ cbuffer cbPerObject : register(b0)
 cbuffer cbPass : register(b1)
 {
 	float4x4 view;
-	float4x4 projection;
+	float4x4 invView;
+	float4x4 proj;
+	float4x4 pnvProj;
+	float4x4 viewProj;
+	float4x4 invViewProj;
+	float3 eyePosW;
+	float cbPerObjectPad1;
+	float2 renderTargetSize;
+	float2 invRenderTargetSize;
+	float nearZ;
+	float farZ;
+	float totalTime;
+	float deltaTime;
+	float4 ambientLight;
+
+	Light lights[MaxLights];
 }
 
 cbuffer cbMaterial : register(b2)
@@ -36,6 +65,8 @@ struct VS_OUTPUT
 VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT output;
+
+	// Transform to world space
 
 	float4 outPos = mul( float4(input.Position, 1.0f), world);
 	matrix viewProjection = mul(view, projection);
