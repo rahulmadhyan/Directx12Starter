@@ -9,6 +9,8 @@ public:
 	Timer(HWND handle, LPCTSTR windowTitle);
 	~Timer();
 
+	const float& GetDeltaTime() const;
+
 	void UpdateTimer();
 	void UpdateTitleBarStats();
 

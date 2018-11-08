@@ -17,6 +17,8 @@ Game::~Game()
 
 	delete inputManager;
 	
+	delete player;
+
 	for (auto r : renderables)
 	{
 		delete r;
@@ -37,6 +39,8 @@ bool Game::Initialize()
 	mainCamera = Camera(screenWidth, screenHeight);
 
 	inputManager = InputManager::getInstance();
+
+	player = new Player();
 
 	BuildTextures();
 	BuildRootSignature();
@@ -69,8 +73,6 @@ void Game::Resize()
 
 void Game::Update(const Timer &timer)
 {
-	mainCamera.Update();
-	inputManager->UpdateController();
 	// Cycle through the circular frame resource array.
 	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
 	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
@@ -85,7 +87,10 @@ void Game::Update(const Timer &timer)
 		CloseHandle(eventHandle);
 	}
 
-	
+	mainCamera.Update();
+	inputManager->UpdateController();
+
+	player->Update(timer, renderables[0]);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -576,19 +581,10 @@ void Game::BuildMaterials()
 
 void Game::BuildRenderables()
 {
-	auto boxRitem = new Renderable;
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(20.0f, 0.25f, 20.0f)*XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-	boxRitem->ObjCBIndex = 0;
-	boxRitem->Geo = Geometries["shapeGeo"].get();
-	boxRitem->Mat = Materials["demo1"].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box1"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box1"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box1"].BaseVertexLocation;
-	renderables.push_back(std::move(boxRitem));
-
 	auto cylinderRitem = new Renderable;
-	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(1.0f, 4.0f, 1.0f)*XMMatrixTranslation(3.0f, 2.0f, 0.0f));	
+	cylinderRitem->SetScale(1.0f, 4.0f, 1.0f);
+	cylinderRitem->SetTranslation(3.0f, 2.0f, 0.0f);
+	cylinderRitem->SetWorldMatrix();
 	cylinderRitem->ObjCBIndex = 1;
 	cylinderRitem->Geo = Geometries["shapeGeo"].get();
 	cylinderRitem->Mat = Materials["demo2"].get();
@@ -597,6 +593,18 @@ void Game::BuildRenderables()
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
 	renderables.push_back(std::move(cylinderRitem));
+
+	auto boxRitem = new Renderable;
+	boxRitem->SetScale(20.0f, 0.25f, 20.0f);
+	boxRitem->SetWorldMatrix();
+	boxRitem->ObjCBIndex = 0;
+	boxRitem->Geo = Geometries["shapeGeo"].get();
+	boxRitem->Mat = Materials["demo1"].get();
+	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box1"].IndexCount;
+	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box1"].StartIndexLocation;
+	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box1"].BaseVertexLocation;
+	renderables.push_back(std::move(boxRitem));
 }
 
 void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)

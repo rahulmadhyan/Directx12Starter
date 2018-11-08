@@ -7,6 +7,7 @@
 #include "GeometryGenerator.h"
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
+#include "Player.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -53,6 +54,8 @@ private:
 	InputManager* inputManager;
 
 	SystemData *systemData;
+
+	Player *player;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;

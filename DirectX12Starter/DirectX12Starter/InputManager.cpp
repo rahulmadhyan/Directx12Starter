@@ -101,19 +101,31 @@ bool InputManager::isControllerButtonPressed(WORD keyCode)
 
 SHORT InputManager::getLeftStickX()
 {
-	return gameController.sThumbLX;
+	if (gameController.sThumbLX > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE || gameController.sThumbLX < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		return gameController.sThumbLX;
+	else
+		return 0;
 }
 
 SHORT InputManager::getLeftStickY()
 {
-	return gameController.sThumbLY;
+	if (gameController.sThumbLY > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE || gameController.sThumbLY < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
+		return gameController.sThumbLY;
+	else
+		return 0;
 }
 SHORT InputManager::getRightStickX()
 {
-	return gameController.sThumbRX;
+	if (gameController.sThumbRX > XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE || gameController.sThumbRX < -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
+		return gameController.sThumbRX;
+	else
+		return 0;
 }
 
 SHORT InputManager::getRightStickY()
 {
-	return gameController.sThumbRY;
+	if (gameController.sThumbRY > XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE || gameController.sThumbRY < -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE)
+		return gameController.sThumbRY;
+	else
+		return 0;
 }
