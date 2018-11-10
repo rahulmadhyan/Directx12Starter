@@ -42,8 +42,11 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 
-	// list of all the renderables
-	std::vector<Entity*> entities;
+	// list of all the entities
+	std::vector<std::unique_ptr<Entity>> allEntities;
+
+	std::vector<Entity*> playerEntities;
+	std::vector<Entity*> sceneEntities;
 
 	PassConstants MainPassCB;
 
@@ -75,7 +78,7 @@ private:
 	void BuildFrameResources();
 	void BuildMaterials();
 	void BuildEntities();
-	void DrawEntities(ID3D12GraphicsCommandList* cmdList);
+	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 };
