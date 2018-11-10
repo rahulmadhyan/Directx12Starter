@@ -441,8 +441,8 @@ void Game::BuildRootSignature()
 
 void Game::BuildShadersAndInputLayout()
 {
-	Shaders["VS"] = d3dUtil::CompileShader(L"VertexShader.hlsl", nullptr, "main", "vs_5_1");
-	Shaders["PS"] = d3dUtil::CompileShader(L"PixelShader.hlsl", nullptr, "main", "ps_5_1");
+	Shaders["VS"] = d3dUtil::CompileShader(L"Resources/Shaders/VertexShader.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["PS"] = d3dUtil::CompileShader(L"Resources/Shaders/PixelShader.hlsl", nullptr, "main", "ps_5_1");
 
 	inputLayout =
 	{
