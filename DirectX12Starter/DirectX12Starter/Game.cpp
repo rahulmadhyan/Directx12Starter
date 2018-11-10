@@ -19,7 +19,7 @@ Game::~Game()
 	
 	delete player;
 
-	for (auto r : renderables)
+	for (auto r : entities)
 	{
 		delete r;
 		r = 0;
@@ -47,7 +47,7 @@ bool Game::Initialize()
 	BuildShadersAndInputLayout();
 	BuildGeometry();
 	BuildMaterials();
-	BuildRenderables();
+	BuildEntities();
 	BuildFrameResources();
 	BuildDescriptorHeaps();
 	BuildConstantBufferViews();
@@ -90,7 +90,7 @@ void Game::Update(const Timer &timer)
 	mainCamera.Update();
 	inputManager->UpdateController();
 
-	player->Update(timer, renderables[0]);
+	player->Update(timer, entities[0]);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -131,7 +131,7 @@ void Game::Draw(const Timer &timer)
 	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
 	CommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-	DrawRenderables(CommandList.Get());
+	DrawEntities(CommandList.Get());
 
 	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -160,7 +160,7 @@ void Game::Draw(const Timer &timer)
 void Game::UpdateObjectCBs(const Timer & timer)
 {
 	auto currentObjectCB = currentFrameResource->ObjectCB.get();
-	for (auto& e : renderables)
+	for (auto& e : entities)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
@@ -247,7 +247,7 @@ void Game::BuildTextures()
 void Game::BuildDescriptorHeaps()
 {
 	// build constant buffer heap for objects
-	UINT objCount = (UINT)renderables.size();
+	UINT objCount = (UINT)entities.size();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
@@ -293,7 +293,7 @@ void Game::BuildConstantBufferViews()
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
-	UINT objCount = (UINT)renderables.size();
+	UINT objCount = (UINT)entities.size();
 
 	// Need a CBV descriptor for each object for each frame resource.
 	for (int frameIndex = 0; frameIndex < gNumberFrameResources; ++frameIndex)
@@ -552,7 +552,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)renderables.size(), Materials.size()));
+			1, (UINT)entities.size(), Materials.size()));
 	}
 }
 
@@ -579,9 +579,9 @@ void Game::BuildMaterials()
 	Materials[demo2Material->Name] = std::move(demo2Material);
 }
 
-void Game::BuildRenderables()
+void Game::BuildEntities()
 {
-	auto cylinderRitem = new Renderable;
+	auto cylinderRitem = new Entity;
 	cylinderRitem->SetScale(1.0f, 4.0f, 1.0f);
 	cylinderRitem->SetTranslation(3.0f, 2.0f, 0.0f);
 	cylinderRitem->SetWorldMatrix();
@@ -592,9 +592,9 @@ void Game::BuildRenderables()
 	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs["cylinder"].IndexCount;
 	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
 	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-	renderables.push_back(std::move(cylinderRitem));
+	entities.push_back(std::move(cylinderRitem));
 
-	auto boxRitem = new Renderable;
+	auto boxRitem = new Entity;
 	boxRitem->SetScale(20.0f, 0.25f, 20.0f);
 	boxRitem->SetWorldMatrix();
 	boxRitem->ObjCBIndex = 0;
@@ -604,10 +604,10 @@ void Game::BuildRenderables()
 	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box1"].IndexCount;
 	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box1"].StartIndexLocation;
 	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box1"].BaseVertexLocation;
-	renderables.push_back(std::move(boxRitem));
+	entities.push_back(std::move(boxRitem));
 }
 
-void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
+void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList)
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
@@ -616,9 +616,9 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 	auto matCB = currentFrameResource->MaterialCB->Resource();
 
 	// For each render item...
-	for (size_t i = 0; i < renderables.size(); ++i)
+	for (size_t i = 0; i < entities.size(); ++i)
 	{
-		auto r = renderables[i];
+		auto r = entities[i];
 
 		cmdList->IASetVertexBuffers(0, 1, &r->Geo->VertexBufferView());
 		cmdList->IASetIndexBuffer(&r->Geo->IndexBufferView());
@@ -628,7 +628,7 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 		cmdList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
 
 		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
-		UINT objCBVIndex = currentFrameResourceIndex * (UINT)renderables.size() + r->ObjCBIndex;
+		UINT objCBVIndex = currentFrameResourceIndex * (UINT)entities.size() + r->ObjCBIndex;
 		auto objCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
 		objCBVHandle.Offset(objCBVIndex, CBVSRVUAVDescriptorSize);
 

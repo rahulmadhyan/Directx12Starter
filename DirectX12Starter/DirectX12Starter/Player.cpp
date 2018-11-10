@@ -15,7 +15,7 @@ Player::~Player()
 {
 }
 
-void Player::Update(const Timer &timer, Renderable *playerRenderable)
+void Player::Update(const Timer &timer, Entity *playerEntity)
 {
 	const float deltaTime = timer.GetDeltaTime();
 
@@ -23,7 +23,7 @@ void Player::Update(const Timer &timer, Renderable *playerRenderable)
 	zTranslation = InputManager::getInstance()->getLeftStickY();
 	yRotation = InputManager::getInstance()->getRightStickX();
 
-	XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0.0f, playerRenderable->Rotation.y, 0.0f);
+	XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0.0f, playerEntity->Rotation.y, 0.0f);
 	
 	XMVECTOR newPosition = XMVectorSet(xTranslation * deltaTime * moveRate, 0.0f, zTranslation * deltaTime * moveRate, 0.0f);
 	newPosition = XMVector3Transform(newPosition, rotationMatrix);
@@ -31,9 +31,9 @@ void Player::Update(const Timer &timer, Renderable *playerRenderable)
 	XMFLOAT3 newPos;
 	XMStoreFloat3(&newPos, newPosition);
 
-	playerRenderable->SetTranslation(newPos.x, newPos.y, newPos.z);
-	playerRenderable->SetRotation(0.0f, moveRate * yRotation * deltaTime, 0.0f);
-	playerRenderable->SetWorldMatrix();
+	playerEntity->SetTranslation(newPos.x, newPos.y, newPos.z);
+	playerEntity->SetRotation(0.0f, moveRate * yRotation * deltaTime, 0.0f);
+	playerEntity->SetWorldMatrix();
 
-	playerRenderable->NumFramesDirty = gNumberFrameResources;
+	playerEntity->NumFramesDirty = gNumberFrameResources;
 }

@@ -3,7 +3,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "FrameResource.h"
-#include "Renderable.h"
+#include "Entity.h"
 #include "GeometryGenerator.h"
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
@@ -43,7 +43,7 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 
 	// list of all the renderables
-	std::vector<Renderable*> renderables;
+	std::vector<Entity*> entities;
 
 	PassConstants MainPassCB;
 
@@ -74,8 +74,8 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildMaterials();
-	void BuildRenderables();
-	void DrawRenderables(ID3D12GraphicsCommandList* cmdList);
+	void BuildEntities();
+	void DrawEntities(ID3D12GraphicsCommandList* cmdList);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 };

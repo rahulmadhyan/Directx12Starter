@@ -10,7 +10,7 @@ extern const int gNumberFrameResources;
 // lightweight structure stores parameters to draw a shape
 // this will vary from app-to-app
 
-struct Renderable
+struct Entity
 {
 	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
 	// Because we have an object cbuffer for each FrameResource, we have to apply the
@@ -39,7 +39,7 @@ struct Renderable
 	XMFLOAT4X4 World = MathHelper::Identity4x4();
 	XMFLOAT4X4 TextureTransform = MathHelper::Identity4x4();
 
-	Renderable() = default;
+	Entity() = default;
 
 	void SetTranslation(float x, float y, float z)
 	{

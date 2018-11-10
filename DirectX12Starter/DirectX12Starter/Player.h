@@ -3,7 +3,7 @@
 #include <DirectXMath.h>
 #include "Timer.h"
 #include "InputManager.h"
-#include "Renderable.h"
+#include "Entity.h"
 using namespace DirectX;
 
 class Player
@@ -12,7 +12,7 @@ public:
 	Player();
 	~Player();
 
-	void Update(const Timer &timer, Renderable *playerRenderable);
+	void Update(const Timer &timer, Entity *playerEntity);
 
 private:
 	float xTranslation;
