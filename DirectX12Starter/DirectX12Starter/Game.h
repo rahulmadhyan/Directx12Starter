@@ -8,6 +8,7 @@
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
 #include "Player.h"
+#include "Enemies.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -47,6 +48,7 @@ private:
 
 	std::vector<Entity*> playerEntities;
 	std::vector<Entity*> sceneEntities;
+	std::vector<Entity*> enemyEntities;
 
 	PassConstants MainPassCB;
 
@@ -59,6 +61,8 @@ private:
 	SystemData *systemData;
 
 	Player *player;
+
+	Enemies *enemies;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;

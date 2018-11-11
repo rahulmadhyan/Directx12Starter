@@ -156,6 +156,7 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DXCore.h" />
+    <ClInclude Include="Enemies.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GeometryGenerator.h" />
@@ -177,6 +178,7 @@
     <ClCompile Include="d3dUtil.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DXCore.cpp" />
+    <ClCompile Include="Enemies.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />

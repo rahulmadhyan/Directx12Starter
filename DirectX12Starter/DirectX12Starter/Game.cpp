@@ -18,6 +18,8 @@ Game::~Game()
 	delete inputManager;
 	
 	delete player;
+
+	delete enemies;
 }
 
 bool Game::Initialize()
@@ -35,6 +37,8 @@ bool Game::Initialize()
 	inputManager = InputManager::getInstance();
 
 	player = new Player();
+
+	enemies = new Enemies();
 
 	BuildTextures();
 	BuildRootSignature();
@@ -85,6 +89,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0]);
+	enemies->Update(playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -127,6 +132,7 @@ void Game::Draw(const Timer &timer)
 
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
+	DrawEntities(CommandList.Get(), enemyEntities);
 
 	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -611,7 +617,7 @@ void Game::BuildEntities()
 	currentObjCBIndex++;
 
 	auto sceneEntity2 = std::make_unique<Entity>();
-	sceneEntity2->SetTranslation(00.0f, 5.0f, 0.0f);
+	sceneEntity2->SetTranslation(20.0f, 0.0f, 0.0f);
 	sceneEntity2->SetScale(20.0f, 0.25f, 20.0f);
 	sceneEntity2->SetWorldMatrix();
 	sceneEntity2->ObjCBIndex = currentObjCBIndex;
@@ -623,6 +629,38 @@ void Game::BuildEntities()
 	sceneEntity2->BaseVertexLocation = sceneEntity2->Geo->DrawArgs["box1"].BaseVertexLocation;
 	allEntities.push_back(std::move(sceneEntity2));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto enemyEntity1 = std::make_unique<Entity>();
+	enemyEntity1->SetTranslation(18.0f, 1.0f, 8.0f);
+	enemyEntity1->SetScale(1.0f, 2.0f, 1.0f);
+	enemyEntity1->SetWorldMatrix();
+	enemyEntity1->ObjCBIndex = currentObjCBIndex;
+	enemyEntity1->Geo = Geometries["shapeGeo"].get();
+	enemyEntity1->Mat = Materials["demo1"].get();
+	enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	enemyEntity1->IndexCount = enemyEntity1->Geo->DrawArgs["cylinder"].IndexCount;
+	enemyEntity1->StartIndexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	enemyEntity1->BaseVertexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	allEntities.push_back(std::move(enemyEntity1));
+	enemyEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto enemyEntity2 = std::make_unique<Entity>();
+	enemyEntity2->SetTranslation(22.0f, 1.0f, 4.0f);
+	enemyEntity2->SetScale(1.0f, 2.0f, 1.0f);
+	enemyEntity2->SetWorldMatrix();
+	enemyEntity2->ObjCBIndex = currentObjCBIndex;
+	enemyEntity2->Geo = Geometries["shapeGeo"].get();
+	enemyEntity2->Mat = Materials["demo1"].get();
+	enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	enemyEntity2->IndexCount = enemyEntity2->Geo->DrawArgs["cylinder"].IndexCount;
+	enemyEntity2->StartIndexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	enemyEntity2->BaseVertexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	allEntities.push_back(std::move(enemyEntity2));
+	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 }
