@@ -10,6 +10,15 @@ SystemData::SystemData()
 	positions = new XMFLOAT3[UINT16_MAX];
 	normals = new XMFLOAT3[UINT16_MAX];
 	uvs = new XMFLOAT2[UINT16_MAX];
+
+	worldPositions = new XMFLOAT3[UINT16_MAX];
+	memset(worldPositions, 0, sizeof(XMFLOAT3) * UINT16_MAX);
+	worldRotations = new XMFLOAT3[UINT16_MAX];
+	memset(worldRotations, 0, sizeof(XMFLOAT3) * UINT16_MAX);
+	worldScales = new XMFLOAT3[UINT16_MAX];
+	memset(worldScales, 0, sizeof(XMFLOAT3) * UINT16_MAX);
+	
+	worldMatrices = new XMFLOAT4X4[UINT16_MAX];
 }
 
 SystemData::~SystemData()
@@ -25,6 +34,18 @@ SystemData::~SystemData()
 
 	delete[] uvs;
 	uvs = 0;
+
+	delete[] worldPositions;
+	worldPositions = 0;
+
+	delete[] worldRotations;
+	worldRotations = 0;
+
+	delete[] worldScales;
+	worldScales = 0;
+
+	delete[] worldMatrices;
+	worldMatrices = 0;
 }
 
 const uint16_t SystemData::GetCurrentBaseLocation()
@@ -47,7 +68,7 @@ const XMFLOAT3* SystemData::GetNormals()
 	return normals;
 }
 
-const XMFLOAT2* SystemData::GetUvs()
+const XMFLOAT2* SystemData::GetUVs()
 {
 	return uvs;
 }
@@ -55,6 +76,55 @@ const XMFLOAT2* SystemData::GetUvs()
 SubSystem SystemData::GetSubSystem(char* subSystemName) const
 {
 	return subSystemData.at(subSystemName);
+}
+
+const XMFLOAT3* SystemData::GetWorldPosition(UINT index)
+{
+	return &worldPositions[index];
+}
+
+const XMFLOAT3* SystemData::GetWorldRotation(UINT index)
+{
+	return &worldRotations[index];
+}
+
+const XMFLOAT3* SystemData::GetWorldScale(UINT index)
+{
+	return &worldScales[index];
+}
+
+const XMFLOAT4X4* SystemData::GetWorldMatrix(UINT index)
+{
+	return &worldMatrices[index];
+}
+
+void SystemData::SetTranslation(UINT worldIndex, float x, float y, float z)
+{
+	XMVECTOR newPosition = XMVectorSet(worldPositions[worldIndex].x + x, worldPositions[worldIndex].y + y, worldPositions[worldIndex].z + z, 0.0f);
+	XMStoreFloat3(&worldPositions[worldIndex], newPosition);
+}
+
+void SystemData::SetRotation(UINT worldIndex, float roll, float pitch, float yaw)
+{
+	XMVECTOR newRotation = XMVectorSet(worldRotations[worldIndex].x + roll, worldRotations[worldIndex].y + pitch, worldRotations[worldIndex].z + yaw, 0.0f);
+	XMStoreFloat3(&worldRotations[worldIndex], newRotation);
+}
+
+void SystemData::SetScale(UINT worldIndex, float xScale, float yScale, float zScale)
+{
+	XMVECTOR newScale = XMVectorSet(worldScales[worldIndex].x + xScale, worldScales[worldIndex].y + yScale, worldScales[worldIndex].z + zScale, 0.0f);
+	XMStoreFloat3(&worldScales[worldIndex], newScale);
+}
+
+void SystemData::SetWorldMatrix(UINT worldIndex)
+{
+	XMFLOAT3 currentWorldScale = worldScales[worldIndex];
+	XMFLOAT3 currentWorldRotation = worldRotations[worldIndex];
+	XMFLOAT3 currentWorldPosition = worldPositions[worldIndex];
+
+	XMStoreFloat4x4(&worldMatrices[worldIndex], XMMatrixScaling(currentWorldScale.x, currentWorldScale.y, currentWorldScale.z) *
+		XMMatrixRotationRollPitchYaw(currentWorldRotation.x, currentWorldRotation.y, currentWorldRotation.z) *
+		XMMatrixTranslation(currentWorldPosition.x, currentWorldPosition.y, currentWorldPosition.z));
 }
 
 void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName)
@@ -76,9 +146,9 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 	std::vector<XMFLOAT2> objUvs;           // UVs from the file
 	//std::vector<Vertex> verts;           // Verts we're assembling
 	//std::vector<UINT> indices;           // Indices of these verts
-	
+
 	unsigned int vertexCounter = 0;        // Count of vertices/indices
-	
+
 	char chars[100];                     // String for line reading
 
 										 // Still have data left?
@@ -202,16 +272,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 			indices[vertexCounter] = vertexCounter;
 			vertexCounter += 1;
 
-			//// Add the verts to the vector (flipping the winding order)
-			//verts.push_back(v1);
-			//verts.push_back(v3);
-			//verts.push_back(v2);
-
-			// Add three more indices
-			//indices.push_back(vertCounter); vertCounter += 1;
-			//indices.push_back(vertCounter); vertCounter += 1;
-			//indices.push_back(vertCounter); vertCounter += 1;
-
 			// Was there a 4th face?
 			if (facesRead == 12)
 			{
@@ -246,16 +306,6 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 				currentBaseLocation += 1;
 				indices[vertexCounter] = vertexCounter;
 				vertexCounter += 1;
-
-				//// Add a whole triangle (flipping the winding order)
-				//verts.push_back(v1);
-				//verts.push_back(v4);
-				//verts.push_back(v3);
-
-				// Add three more indices
-				//indices.push_back(vertCounter); vertCounter += 1;
-				//indices.push_back(vertCounter); vertCounter += 1;
-				//indices.push_back(vertCounter); vertCounter += 1;
 			}
 		}
 	}

@@ -33,12 +33,22 @@ public:
 
 	const XMFLOAT3* GetPositions();
 	const XMFLOAT3* GetNormals();
-	const XMFLOAT2* GetUvs();
+	const XMFLOAT2* GetUVs();
 
 	SubSystem GetSubSystem(char* subSystemName) const;
 
-	void LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName);
+	const XMFLOAT3* GetWorldPosition(UINT index);
+	const XMFLOAT3* GetWorldRotation(UINT index);
+	const XMFLOAT3* GetWorldScale(UINT index);
+	const XMFLOAT4X4* GetWorldMatrix(UINT index);
 
+	void SetTranslation(UINT worldIndex, float x, float y, float z);
+	void SetRotation(UINT worldIndex, float roll, float pitch, float yaw);
+	void SetScale(UINT worldIndex, float xScale, float yScale, float zScale);
+
+	void SetWorldMatrix(UINT worldIndex);
+
+	void LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName);
 private:
 	uint16_t currentBaseLocation;
 
@@ -47,6 +57,12 @@ private:
 	XMFLOAT3* positions;
 	XMFLOAT3* normals;
 	XMFLOAT2* uvs;
+
+	XMFLOAT3* worldPositions;
+	XMFLOAT3* worldRotations;
+	XMFLOAT3* worldScales;
+
+	XMFLOAT4X4* worldMatrices;
 
 	std::unordered_map<char*, SubSystem> subSystemData;
 };

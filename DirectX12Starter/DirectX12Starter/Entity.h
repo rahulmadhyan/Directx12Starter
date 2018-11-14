@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 #include <DirectXMath.h>
 #include "MathHelper.h"
 #include "d3dUtil.h"
@@ -21,6 +21,9 @@ struct Entity
 	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
 	UINT ObjCBIndex = -1;
 
+	// Index into SystemData for worldPosition etc.
+	UINT SystemWorldIndex = -1;
+
 	Material* Mat = nullptr;
 	MeshGeometry* Geo = nullptr;
 
@@ -32,16 +35,16 @@ struct Entity
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
 
-	XMFLOAT3 Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	/*XMFLOAT3 Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	XMFLOAT3 Rotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMFLOAT3 Scale = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3 Scale = XMFLOAT3(0.0f, 0.0f, 0.0f);*/
 
-	XMFLOAT4X4 World = MathHelper::Identity4x4();
+	//XMFLOAT4X4 World = MathHelper::Identity4x4();
 	XMFLOAT4X4 TextureTransform = MathHelper::Identity4x4();
 
 	Entity() = default;
 
-	void SetTranslation(float x, float y, float z)
+	/*void SetTranslation(float x, float y, float z)
 	{
 		XMVECTOR newPosition = XMVectorSet(Position.x + x, Position.y + y, Position.z + z, 0.0f);
 		XMStoreFloat3(&Position, newPosition);
@@ -64,5 +67,5 @@ struct Entity
 		XMStoreFloat4x4(&World, XMMatrixScaling(Scale.x, Scale.y, Scale.z) * 
 			XMMatrixRotationRollPitchYaw(Rotation.x, Rotation.y, Rotation.z) * 
 			XMMatrixTranslation(Position.x, Position.y,	Position.z));
-	}
+	}*/
 };

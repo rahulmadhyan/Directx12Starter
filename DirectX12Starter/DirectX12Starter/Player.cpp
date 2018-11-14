@@ -2,7 +2,7 @@
 
 extern const int gNumberFrameResources;
 
-Player::Player()
+Player::Player(SystemData *systemData) : systemData(systemData)
 {
 	xTranslation = 0;
 	zTranslation = 0;
@@ -23,7 +23,10 @@ void Player::Update(const Timer &timer, Entity *playerEntity)
 	zTranslation = InputManager::getInstance()->getLeftStickY();
 	yRotation = InputManager::getInstance()->getRightStickX();
 
-	XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0.0f, playerEntity->Rotation.y, 0.0f);
+	UINT playerEntityIndex = playerEntity->SystemWorldIndex;
+	const XMFLOAT3* playerRotation = systemData->GetWorldRotation(playerEntity->SystemWorldIndex);
+
+	XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(0.0f, playerRotation->y, 0.0f);
 	
 	XMVECTOR newPosition = XMVectorSet(xTranslation * deltaTime * moveRate, 0.0f, zTranslation * deltaTime * moveRate, 0.0f);
 	newPosition = XMVector3Transform(newPosition, rotationMatrix);
@@ -31,9 +34,9 @@ void Player::Update(const Timer &timer, Entity *playerEntity)
 	XMFLOAT3 newPos;
 	XMStoreFloat3(&newPos, newPosition);
 
-	playerEntity->SetTranslation(newPos.x, newPos.y, newPos.z);
-	playerEntity->SetRotation(0.0f, moveRate * yRotation * deltaTime, 0.0f);
-	playerEntity->SetWorldMatrix();
+	systemData->SetTranslation(playerEntityIndex, newPos.x, newPos.y, newPos.z);
+	systemData->SetRotation(playerEntityIndex, 0.0f, moveRate * yRotation * deltaTime, 0.0f);
+	systemData->SetWorldMatrix(playerEntityIndex);
 
 	playerEntity->NumFramesDirty = gNumberFrameResources;
 }

@@ -36,7 +36,7 @@ bool Game::Initialize()
 
 	inputManager = InputManager::getInstance();
 
-	player = new Player();
+	player = new Player(systemData);
 
 	enemies = new Enemies();
 
@@ -167,7 +167,8 @@ void Game::UpdateObjectCBs(const Timer & timer)
 		// This needs to be tracked per frame resource.
 		if (e->NumFramesDirty > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+ 			XMMATRIX world = XMLoadFloat4x4(currentWorldMatrix);
 			XMMATRIX textureTransform = XMLoadFloat4x4(&e->TextureTransform);
 
 			ObjectConstants objConstants;
@@ -477,7 +478,7 @@ void Game::BuildGeometry()
 
 	const XMFLOAT3* systemPositions = systemData->GetPositions();
 	const XMFLOAT3* systemNormals = systemData->GetNormals();
-	const XMFLOAT2* systemUvs = systemData->GetUvs();
+	const XMFLOAT2* systemUvs = systemData->GetUVs();
 
 	const uint16_t* systemIndices = systemData->GetIndices();
 
@@ -586,9 +587,10 @@ void Game::BuildEntities()
 	int currentObjCBIndex = 0;
 
 	auto playerEntity = std::make_unique<Entity>();
-	playerEntity->SetScale(1.0f, 4.0f, 1.0f);
-	playerEntity->SetTranslation(3.0f, 2.0f, 0.0f);
-	playerEntity->SetWorldMatrix();
+	playerEntity->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 3.0f, 2.0f, 0.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
 	playerEntity->Mat = Materials["demo2"].get();
@@ -602,8 +604,9 @@ void Game::BuildEntities()
 	currentObjCBIndex++;
 
 	auto sceneEntity1 = std::make_unique<Entity>();
-	sceneEntity1->SetScale(20.0f, 0.25f, 20.0f);
-	sceneEntity1->SetWorldMatrix();
+	sceneEntity1->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	sceneEntity1->ObjCBIndex = currentObjCBIndex;
 	sceneEntity1->Geo = Geometries["shapeGeo"].get();
 	sceneEntity1->Mat = Materials["demo1"].get();
@@ -617,9 +620,10 @@ void Game::BuildEntities()
 	currentObjCBIndex++;
 
 	auto sceneEntity2 = std::make_unique<Entity>();
-	sceneEntity2->SetTranslation(20.0f, 0.0f, 0.0f);
-	sceneEntity2->SetScale(20.0f, 0.25f, 20.0f);
-	sceneEntity2->SetWorldMatrix();
+	sceneEntity2->SystemWorldIndex = currentEntityIndex;
+	systemData->SetTranslation(currentEntityIndex, 20.0f, 0.0f, 0.0f);
+	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	sceneEntity2->ObjCBIndex = currentObjCBIndex;
 	sceneEntity2->Geo = Geometries["shapeGeo"].get();
 	sceneEntity2->Mat = Materials["demo2"].get();
@@ -633,9 +637,10 @@ void Game::BuildEntities()
 	currentObjCBIndex++;
 
 	auto enemyEntity1 = std::make_unique<Entity>();
-	enemyEntity1->SetTranslation(18.0f, 1.0f, 8.0f);
-	enemyEntity1->SetScale(1.0f, 2.0f, 1.0f);
-	enemyEntity1->SetWorldMatrix();
+	enemyEntity1->SystemWorldIndex = currentEntityIndex;
+	systemData->SetTranslation(currentEntityIndex, 18.0f, 1.0f, 8.0f);
+	systemData->SetScale(currentEntityIndex, 1.0f, 2.0f, 1.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity1->ObjCBIndex = currentObjCBIndex;
 	enemyEntity1->Geo = Geometries["shapeGeo"].get();
 	enemyEntity1->Mat = Materials["demo1"].get();
@@ -649,9 +654,10 @@ void Game::BuildEntities()
 	currentObjCBIndex++;
 
 	auto enemyEntity2 = std::make_unique<Entity>();
-	enemyEntity2->SetTranslation(22.0f, 1.0f, 4.0f);
-	enemyEntity2->SetScale(1.0f, 2.0f, 1.0f);
-	enemyEntity2->SetWorldMatrix();
+	enemyEntity2->SystemWorldIndex = currentEntityIndex;
+	systemData->SetTranslation(currentEntityIndex, 22.0f, 1.0f, 4.0f);
+	systemData->SetScale(currentEntityIndex, 1.0f, 2.0f, 1.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity2->ObjCBIndex = currentObjCBIndex;
 	enemyEntity2->Geo = Geometries["shapeGeo"].get();
 	enemyEntity2->Mat = Materials["demo1"].get();
