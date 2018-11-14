@@ -89,7 +89,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0]);
-	enemies->Update(playerEntities[0], enemyEntities);
+	enemies->Update(timer, playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
