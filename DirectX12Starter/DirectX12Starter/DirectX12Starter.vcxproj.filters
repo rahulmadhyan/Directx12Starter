@@ -150,4 +150,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Shaders\LightingUtil.hlsl">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
 </Project>

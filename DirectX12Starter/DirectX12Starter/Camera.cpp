@@ -37,6 +37,11 @@ XMFLOAT4X4 Camera::GetProjectionMatrix()
 	return projectionMatrix;
 }
 
+XMFLOAT3 Camera::GetCameraPosition()
+{
+	return position;
+}
+
 void Camera::SetXRotation(float amount)
 {
 	xRotation += amount * 0.0001f;

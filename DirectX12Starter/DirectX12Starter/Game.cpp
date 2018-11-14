@@ -187,6 +187,9 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	XMMATRIX view = XMLoadFloat4x4(&mainCamera.GetViewMatrix());
 	XMMATRIX projection = XMLoadFloat4x4(&mainCamera.GetProjectionMatrix()); 
 
+	MainPassCB.CameraPosition = mainCamera.GetCameraPosition();
+	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+
 	XMMATRIX viewProj = XMMatrixMultiply(view, projection);
 	
 	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
