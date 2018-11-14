@@ -17,11 +17,9 @@ Game::~Game()
 
 	delete inputManager;
 	
-	for (auto r : renderables)
-	{
-		delete r;
-		r = 0;
-	}
+	delete player;
+
+	delete enemies;
 }
 
 bool Game::Initialize()
@@ -38,12 +36,16 @@ bool Game::Initialize()
 
 	inputManager = InputManager::getInstance();
 
+	player = new Player();
+
+	enemies = new Enemies();
+
 	BuildTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
 	BuildMaterials();
-	BuildRenderables();
+	BuildEntities();
 	BuildFrameResources();
 	BuildDescriptorHeaps();
 	BuildConstantBufferViews();
@@ -69,8 +71,6 @@ void Game::Resize()
 
 void Game::Update(const Timer &timer)
 {
-	mainCamera.Update();
-	inputManager->UpdateController();
 	// Cycle through the circular frame resource array.
 	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
 	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
@@ -85,7 +85,11 @@ void Game::Update(const Timer &timer)
 		CloseHandle(eventHandle);
 	}
 
-	
+	mainCamera.Update();
+	inputManager->UpdateController();
+
+	player->Update(timer, playerEntities[0]);
+	enemies->Update(timer, playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -126,7 +130,9 @@ void Game::Draw(const Timer &timer)
 	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
 	CommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-	DrawRenderables(CommandList.Get());
+	DrawEntities(CommandList.Get(), playerEntities);
+	DrawEntities(CommandList.Get(), sceneEntities);
+	DrawEntities(CommandList.Get(), enemyEntities);
 
 	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -155,7 +161,7 @@ void Game::Draw(const Timer &timer)
 void Game::UpdateObjectCBs(const Timer & timer)
 {
 	auto currentObjectCB = currentFrameResource->ObjectCB.get();
-	for (auto& e : renderables)
+	for (auto& e : allEntities)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
@@ -242,7 +248,7 @@ void Game::BuildTextures()
 void Game::BuildDescriptorHeaps()
 {
 	// build constant buffer heap for objects
-	UINT objCount = (UINT)renderables.size();
+	UINT objCount = (UINT)allEntities.size();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
@@ -288,7 +294,7 @@ void Game::BuildConstantBufferViews()
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
-	UINT objCount = (UINT)renderables.size();
+	UINT objCount = (UINT)allEntities.size();
 
 	// Need a CBV descriptor for each object for each frame resource.
 	for (int frameIndex = 0; frameIndex < gNumberFrameResources; ++frameIndex)
@@ -436,8 +442,8 @@ void Game::BuildRootSignature()
 
 void Game::BuildShadersAndInputLayout()
 {
-	Shaders["VS"] = d3dUtil::CompileShader(L"VertexShader.hlsl", nullptr, "main", "vs_5_1");
-	Shaders["PS"] = d3dUtil::CompileShader(L"PixelShader.hlsl", nullptr, "main", "ps_5_1");
+	Shaders["VS"] = d3dUtil::CompileShader(L"Resources/Shaders/VertexShader.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["PS"] = d3dUtil::CompileShader(L"Resources/Shaders/PixelShader.hlsl", nullptr, "main", "ps_5_1");
 
 	inputLayout =
 	{
@@ -547,7 +553,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)renderables.size(), Materials.size()));
+			1, (UINT)allEntities.size(), Materials.size()));
 	}
 }
 
@@ -574,32 +580,92 @@ void Game::BuildMaterials()
 	Materials[demo2Material->Name] = std::move(demo2Material);
 }
 
-void Game::BuildRenderables()
+void Game::BuildEntities()
 {
-	auto boxRitem = new Renderable;
-	XMStoreFloat4x4(&boxRitem->World, XMMatrixScaling(20.0f, 0.25f, 20.0f)*XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-	boxRitem->ObjCBIndex = 0;
-	boxRitem->Geo = Geometries["shapeGeo"].get();
-	boxRitem->Mat = Materials["demo1"].get();
-	boxRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box1"].IndexCount;
-	boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box1"].StartIndexLocation;
-	boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box1"].BaseVertexLocation;
-	renderables.push_back(std::move(boxRitem));
+	int currentEntityIndex = 0;
+	int currentObjCBIndex = 0;
 
-	auto cylinderRitem = new Renderable;
-	XMStoreFloat4x4(&cylinderRitem->World, XMMatrixScaling(1.0f, 4.0f, 1.0f)*XMMatrixTranslation(3.0f, 2.0f, 0.0f));	
-	cylinderRitem->ObjCBIndex = 1;
-	cylinderRitem->Geo = Geometries["shapeGeo"].get();
-	cylinderRitem->Mat = Materials["demo2"].get();
-	cylinderRitem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	cylinderRitem->IndexCount = cylinderRitem->Geo->DrawArgs["cylinder"].IndexCount;
-	cylinderRitem->StartIndexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	cylinderRitem->BaseVertexLocation = cylinderRitem->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-	renderables.push_back(std::move(cylinderRitem));
+	auto playerEntity = std::make_unique<Entity>();
+	playerEntity->SetScale(1.0f, 4.0f, 1.0f);
+	playerEntity->SetTranslation(3.0f, 2.0f, 0.0f);
+	playerEntity->SetWorldMatrix();
+	playerEntity->ObjCBIndex = currentObjCBIndex;
+	playerEntity->Geo = Geometries["shapeGeo"].get();
+	playerEntity->Mat = Materials["demo2"].get();
+	playerEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	playerEntity->IndexCount = playerEntity->Geo->DrawArgs["cylinder"].IndexCount;
+	playerEntity->StartIndexLocation = playerEntity->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	playerEntity->BaseVertexLocation = playerEntity->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	allEntities.push_back(std::move(playerEntity));
+	playerEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto sceneEntity1 = std::make_unique<Entity>();
+	sceneEntity1->SetScale(20.0f, 0.25f, 20.0f);
+	sceneEntity1->SetWorldMatrix();
+	sceneEntity1->ObjCBIndex = currentObjCBIndex;
+	sceneEntity1->Geo = Geometries["shapeGeo"].get();
+	sceneEntity1->Mat = Materials["demo1"].get();
+	sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	sceneEntity1->IndexCount = sceneEntity1->Geo->DrawArgs["box1"].IndexCount;
+	sceneEntity1->StartIndexLocation = sceneEntity1->Geo->DrawArgs["box1"].StartIndexLocation;
+	sceneEntity1->BaseVertexLocation = sceneEntity1->Geo->DrawArgs["box1"].BaseVertexLocation;
+	allEntities.push_back(std::move(sceneEntity1));
+	sceneEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto sceneEntity2 = std::make_unique<Entity>();
+	sceneEntity2->SetTranslation(20.0f, 0.0f, 0.0f);
+	sceneEntity2->SetScale(20.0f, 0.25f, 20.0f);
+	sceneEntity2->SetWorldMatrix();
+	sceneEntity2->ObjCBIndex = currentObjCBIndex;
+	sceneEntity2->Geo = Geometries["shapeGeo"].get();
+	sceneEntity2->Mat = Materials["demo2"].get();
+	sceneEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	sceneEntity2->IndexCount = sceneEntity2->Geo->DrawArgs["box1"].IndexCount;
+	sceneEntity2->StartIndexLocation = sceneEntity2->Geo->DrawArgs["box1"].StartIndexLocation;
+	sceneEntity2->BaseVertexLocation = sceneEntity2->Geo->DrawArgs["box1"].BaseVertexLocation;
+	allEntities.push_back(std::move(sceneEntity2));
+	sceneEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto enemyEntity1 = std::make_unique<Entity>();
+	enemyEntity1->SetTranslation(18.0f, 1.0f, 8.0f);
+	enemyEntity1->SetScale(1.0f, 2.0f, 1.0f);
+	enemyEntity1->SetWorldMatrix();
+	enemyEntity1->ObjCBIndex = currentObjCBIndex;
+	enemyEntity1->Geo = Geometries["shapeGeo"].get();
+	enemyEntity1->Mat = Materials["demo1"].get();
+	enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	enemyEntity1->IndexCount = enemyEntity1->Geo->DrawArgs["cylinder"].IndexCount;
+	enemyEntity1->StartIndexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	enemyEntity1->BaseVertexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	allEntities.push_back(std::move(enemyEntity1));
+	enemyEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto enemyEntity2 = std::make_unique<Entity>();
+	enemyEntity2->SetTranslation(22.0f, 1.0f, 4.0f);
+	enemyEntity2->SetScale(1.0f, 2.0f, 1.0f);
+	enemyEntity2->SetWorldMatrix();
+	enemyEntity2->ObjCBIndex = currentObjCBIndex;
+	enemyEntity2->Geo = Geometries["shapeGeo"].get();
+	enemyEntity2->Mat = Materials["demo1"].get();
+	enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	enemyEntity2->IndexCount = enemyEntity2->Geo->DrawArgs["cylinder"].IndexCount;
+	enemyEntity2->StartIndexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].StartIndexLocation;
+	enemyEntity2->BaseVertexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	allEntities.push_back(std::move(enemyEntity2));
+	enemyEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
 }
 
-void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
+void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
@@ -608,19 +674,19 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 	auto matCB = currentFrameResource->MaterialCB->Resource();
 
 	// For each render item...
-	for (size_t i = 0; i < renderables.size(); ++i)
+	for (size_t i = 0; i < entities.size(); ++i)
 	{
-		auto r = renderables[i];
+		auto e = entities[i];
 
-		cmdList->IASetVertexBuffers(0, 1, &r->Geo->VertexBufferView());
-		cmdList->IASetIndexBuffer(&r->Geo->IndexBufferView());
-		cmdList->IASetPrimitiveTopology(r->PrimitiveType);
+		cmdList->IASetVertexBuffers(0, 1, &e->Geo->VertexBufferView());
+		cmdList->IASetIndexBuffer(&e->Geo->IndexBufferView());
+		cmdList->IASetPrimitiveTopology(e->PrimitiveType);
 
 		ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
 		cmdList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
 
 		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
-		UINT objCBVIndex = currentFrameResourceIndex * (UINT)renderables.size() + r->ObjCBIndex;
+		UINT objCBVIndex = currentFrameResourceIndex * (UINT)allEntities.size() + e->ObjCBIndex;
 		auto objCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
 		objCBVHandle.Offset(objCBVIndex, CBVSRVUAVDescriptorSize);
 
@@ -629,7 +695,7 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 		ID3D12DescriptorHeap* matDescriptorHeaps[] = { matCBVHeap.Get() };
 		cmdList->SetDescriptorHeaps(_countof(matDescriptorHeaps), matDescriptorHeaps);
 
-		UINT matCBVIndex = currentFrameResourceIndex * (UINT)Materials.size() + r->Mat->MatCBIndex;
+		UINT matCBVIndex = currentFrameResourceIndex * (UINT)Materials.size() + e->Mat->MatCBIndex;
 		auto matCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(matCBVHeap->GetGPUDescriptorHandleForHeapStart());
 		matCBVHandle.Offset(matCBVIndex, CBVSRVUAVDescriptorSize);
 
@@ -638,13 +704,13 @@ void Game::DrawRenderables(ID3D12GraphicsCommandList* cmdList)
 		ID3D12DescriptorHeap* srvDescriptorHeaps[] = { SRVHeap.Get() };
 		cmdList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
 
-		UINT srvIndex = r->Mat->DiffuseSrvHeapIndex;
+		UINT srvIndex = e->Mat->DiffuseSrvHeapIndex;
 		auto srvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVHeap->GetGPUDescriptorHandleForHeapStart());
 		srvHandle.Offset(srvIndex, CBVSRVUAVDescriptorSize);
 
 		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-		cmdList->DrawIndexedInstanced(r->IndexCount, 1, r->StartIndexLocation, r->BaseVertexLocation, 0);
+		cmdList->DrawIndexedInstanced(e->IndexCount, 1, e->StartIndexLocation, e->BaseVertexLocation, 0);
 	}
 }
 

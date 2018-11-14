@@ -75,7 +75,7 @@ protected:
 	UINT CBVSRVUAVDescriptorSize = 0;
 
 	// derived 'Game' class will set to actual values in constructor
-	std::wstring MainWindowCaption = L"";
+	std::wstring MainWindowCaption = L"Junkyard";
 	D3D_DRIVER_TYPE D3DDriverType = D3D_DRIVER_TYPE_HARDWARE;
 	DXGI_FORMAT BackBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT DepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;

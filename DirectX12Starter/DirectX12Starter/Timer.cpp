@@ -26,6 +26,11 @@ Timer::~Timer()
 {
 }
 
+const float& Timer::GetDeltaTime() const
+{
+	return deltaTime;
+}
+
 void Timer::UpdateTimer()
 {
 	__int64 now;

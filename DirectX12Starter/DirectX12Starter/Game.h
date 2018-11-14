@@ -3,10 +3,12 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "FrameResource.h"
-#include "Renderable.h"
+#include "Entity.h"
 #include "GeometryGenerator.h"
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
+#include "Player.h"
+#include "Enemies.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -41,8 +43,12 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 
-	// list of all the renderables
-	std::vector<Renderable*> renderables;
+	// list of all the entities
+	std::vector<std::unique_ptr<Entity>> allEntities;
+
+	std::vector<Entity*> playerEntities;
+	std::vector<Entity*> sceneEntities;
+	std::vector<Entity*> enemyEntities;
 
 	PassConstants MainPassCB;
 
@@ -53,6 +59,10 @@ private:
 	InputManager* inputManager;
 
 	SystemData *systemData;
+
+	Player *player;
+
+	Enemies *enemies;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;
@@ -71,8 +81,8 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildMaterials();
-	void BuildRenderables();
-	void DrawRenderables(ID3D12GraphicsCommandList* cmdList);
+	void BuildEntities();
+	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 };
