@@ -1,3 +1,16 @@
+// Defualts for number of lights.
+#ifndef NUM_DIR_LIGHTS
+	#define NUM_DIR_LIGHTS 3
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+	#define NUM_POINT_LIGHTS 0
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+	#define NUM_SPOT_LIGHTS 0
+#endif
+
 #include "LightingUtil.hlsl"
 
 Texture2D    diffuseMap : register(t0);
@@ -31,22 +44,22 @@ struct VS_OUTPUT
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-	float4 textureColor = diffuseMap.Sample(sampleLinear, input.UV);
+	float4 difAlbedo = diffuseMap.Sample(sampleLinear, input.UV) * diffuseAlbedo;
 	input.Normal = normalize(input.Normal);
 
 	float toEyeNormal = normalize(eyePosW - input.Position);
 
 	// ambient light
-	float4 ambient = ambientLight * diffuseAlbedo * textureColor;
+	float4 ambient = ambientLight * difAlbedo;
 
 	const float shininess = 1.0f - roughness;
-	Material mat = { diffuseAlbedo, fresnelR0, shininess };
+	Material mat = { difAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(lights, mat, input.Position, input.Normal, toEyeNormal, shadowFactor);
 
 	float4 litColor = directLight + ambient;
 
-	litColor.a = diffuseAlbedo.a;
+	litColor.a = difAlbedo.a;
 
 	return litColor;
 }
