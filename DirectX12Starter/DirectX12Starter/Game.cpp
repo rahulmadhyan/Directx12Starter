@@ -187,13 +187,18 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	XMMATRIX view = XMLoadFloat4x4(&mainCamera.GetViewMatrix());
 	XMMATRIX projection = XMLoadFloat4x4(&mainCamera.GetProjectionMatrix()); 
 
+	XMMATRIX viewProj = XMMatrixMultiply(view, projection);
+
+	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(projection));
+
 	MainPassCB.CameraPosition = mainCamera.GetCameraPosition();
 	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 
-	XMMATRIX viewProj = XMMatrixMultiply(view, projection);
-	
-	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(projection));
+	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
+
+	XMStoreFloat3(&MainPassCB.lights[0].Direction, lightDir);
+	MainPassCB.lights[0].Strength = { 1.0f, 1.0f, 0.9f };
 
 	auto currPassCB = currentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);

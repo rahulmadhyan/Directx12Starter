@@ -44,7 +44,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(lights, mat, input.Position, input.Normal, toEyeNormal, shadowFactor);
 
-	float4 litColor = ambient + directLight;
+	float4 litColor = directLight + ambient;
 
 	litColor.a = diffuseAlbedo.a;
 
