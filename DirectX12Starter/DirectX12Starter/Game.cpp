@@ -396,7 +396,6 @@ void Game::BuildConstantBufferViews()
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
 
-
 		if (it->second->Name == "skyboxMap")
 		{
 			SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
