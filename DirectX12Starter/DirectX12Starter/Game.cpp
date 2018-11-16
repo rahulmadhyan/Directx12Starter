@@ -249,6 +249,18 @@ void Game::BuildTextures()
 		demo2Texture->UploadHeap));
 
 	Textures[demo2Texture->Name] = std::move(demo2Texture);
+
+
+	// Skybox Texture
+	auto skyTexture = std::make_unique<Texture>();
+	skyTexture->Name = "skyboxMap";
+	skyTexture->Filename = L"Resources/Textures/grasscube1024.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), skyTexture->Filename.c_str(),
+		skyTexture->Resource,
+		skyTexture->UploadHeap));
+
+	Textures[skyTexture->Name] = std::move(skyTexture);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -383,12 +395,26 @@ void Game::BuildConstantBufferViews()
 		auto texture = it->second->Resource;
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-		SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		SRVDesc.Format = texture->GetDesc().Format;
-		SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		SRVDesc.Texture2D.MostDetailedMip = 0;
-		SRVDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
-		SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+
+		if (it->second->Name == "skyboxMap")
+		{
+			SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			SRVDesc.TextureCube.MostDetailedMip = 0;
+			SRVDesc.TextureCube.MipLevels = texture->GetDesc().MipLevels;
+			SRVDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+			SRVDesc.Format = texture->GetDesc().Format;
+		}
+		else
+		{
+			SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			SRVDesc.Format = texture->GetDesc().Format;
+			SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			SRVDesc.Texture2D.MostDetailedMip = 0;
+			SRVDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+			SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+		}
 
 		Device->CreateShaderResourceView(texture.Get(), &SRVDesc, handle);
 
