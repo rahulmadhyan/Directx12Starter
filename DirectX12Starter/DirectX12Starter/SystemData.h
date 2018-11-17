@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <DirectXMath.h>
 #include <d3d12.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 #include "Vertex.h"
 #include "wrl.h"
 
@@ -11,13 +14,15 @@ using namespace DirectX;
 
 struct SubSystem
 {
-	uint32_t baseLocation;
-	uint16_t count;
+	uint32_t baseVertexLocation;
+	uint32_t baseIndexLocation;
+	uint16_t indexCount;
 
 	SubSystem()
 	{
-		baseLocation = 0;
-		count = 0;
+		baseVertexLocation = 0;
+		baseIndexLocation = 0;
+		indexCount = 0;
 	}
 };
 
@@ -27,13 +32,14 @@ public:
 	SystemData();
 	~SystemData();
 
-	const uint16_t GetCurrentBaseLocation();
+	const uint16_t GetCurrentBaseVertexLocation();
+	const uint16_t GetCurrentBaseIndexLocation();
 	
 	const uint16_t* GetIndices();
 
 	const XMFLOAT3* GetPositions();
 	const XMFLOAT3* GetNormals();
-	const XMFLOAT2* GetUVs();
+	const XMFLOAT3* GetUVs();
 
 	SubSystem GetSubSystem(char* subSystemName) const;
 
@@ -49,14 +55,16 @@ public:
 	void SetWorldMatrix(UINT worldIndex);
 
 	void LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName);
+
 private:
-	uint16_t currentBaseLocation;
+	uint16_t currentBaseVertexLocation;
+	uint16_t currentBaseIndexLocation;
 
 	uint16_t* indices;
 
 	XMFLOAT3* positions;
 	XMFLOAT3* normals;
-	XMFLOAT2* uvs;
+	XMFLOAT3* uvs;
 
 	XMFLOAT3* worldPositions;
 	XMFLOAT3* worldRotations;

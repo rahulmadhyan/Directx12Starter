@@ -459,34 +459,40 @@ void Game::BuildGeometry()
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
 	SubmeshGeometry box1Submesh;
 	SubSystem box1SubSystem = systemData->GetSubSystem("box1");
-	box1Submesh.IndexCount = box1SubSystem.count;
-	box1Submesh.StartIndexLocation = box1SubSystem.baseLocation;
-	box1Submesh.BaseVertexLocation = box1SubSystem.baseLocation;
+	box1Submesh.IndexCount = box1SubSystem.indexCount;
+	box1Submesh.StartIndexLocation = box1SubSystem.baseIndexLocation;
+	box1Submesh.BaseVertexLocation = box1SubSystem.baseVertexLocation;
 
-	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
+	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "cylinder");
 	SubmeshGeometry cylinderSubmesh;
 	SubSystem cylinderSubSystem = systemData->GetSubSystem("cylinder");
-	cylinderSubmesh.IndexCount = cylinderSubSystem.count;
-	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseLocation;
-	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseLocation;
+	cylinderSubmesh.IndexCount = cylinderSubSystem.indexCount;
+	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseIndexLocation;
+	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseVertexLocation;
 
-	const uint16_t systemDataSize = systemData->GetCurrentBaseLocation();
+	const uint16_t systemDataVertexSize = systemData->GetCurrentBaseVertexLocation();
+	const uint16_t systemDataIndexSize = systemData->GetCurrentBaseIndexLocation();
 
-	std::vector<Vertex> vertices(systemDataSize);
-	std::vector<std::uint16_t> indices(systemDataSize);
+	std::vector<Vertex> vertices(systemDataVertexSize);
+	std::vector<std::uint16_t> indices(systemDataIndexSize);
 	UINT k = 0;
 
-	const XMFLOAT3* systemPositions = systemData->GetPositions();
+ 	const XMFLOAT3* systemPositions = systemData->GetPositions();
 	const XMFLOAT3* systemNormals = systemData->GetNormals();
-	const XMFLOAT2* systemUvs = systemData->GetUVs();
+	const XMFLOAT3* systemUvs = systemData->GetUVs();
 
 	const uint16_t* systemIndices = systemData->GetIndices();
 
-	for (size_t i = 0; i < systemDataSize; ++i, ++k)
+	for (size_t i = 0; i < systemDataVertexSize; ++i, ++k)
 	{
 		vertices[k].Position = systemPositions[i];
 		vertices[k].Normal = systemNormals[i];
-		vertices[k].UV = systemUvs[i];
+		vertices[k].UV = XMFLOAT2(systemUvs[i].x, systemUvs[i].y);
+	}
+
+	k = 0;
+	for (size_t i = 0; i < systemDataIndexSize; ++i, ++k)
+	{
 		indices[k] = systemIndices[i];
 	}
 
@@ -588,8 +594,9 @@ void Game::BuildEntities()
 
 	auto playerEntity = std::make_unique<Entity>();
 	playerEntity->SystemWorldIndex = currentEntityIndex;
-	systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
-	systemData->SetTranslation(currentEntityIndex, 3.0f, 2.0f, 0.0f);
+	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
+	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
+	systemData->SetTranslation(currentEntityIndex, 3.0f, 3.5f, 0.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
@@ -638,8 +645,8 @@ void Game::BuildEntities()
 
 	auto enemyEntity1 = std::make_unique<Entity>();
 	enemyEntity1->SystemWorldIndex = currentEntityIndex;
-	systemData->SetTranslation(currentEntityIndex, 18.0f, 1.0f, 8.0f);
-	systemData->SetScale(currentEntityIndex, 1.0f, 2.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 18.0f, 1.75f, 8.0f);
+	systemData->SetScale(currentEntityIndex, 0.5f, 0.5f, 0.5f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity1->ObjCBIndex = currentObjCBIndex;
 	enemyEntity1->Geo = Geometries["shapeGeo"].get();
@@ -655,8 +662,8 @@ void Game::BuildEntities()
 
 	auto enemyEntity2 = std::make_unique<Entity>();
 	enemyEntity2->SystemWorldIndex = currentEntityIndex;
-	systemData->SetTranslation(currentEntityIndex, 22.0f, 1.0f, 4.0f);
-	systemData->SetScale(currentEntityIndex, 1.0f, 2.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 22.0f, 1.75f, 4.0f);
+	systemData->SetScale(currentEntityIndex, 0.5f, 0.5f, 0.5f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity2->ObjCBIndex = currentObjCBIndex;
 	enemyEntity2->Geo = Geometries["shapeGeo"].get();
