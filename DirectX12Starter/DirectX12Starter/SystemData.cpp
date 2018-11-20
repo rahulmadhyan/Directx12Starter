@@ -142,7 +142,9 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(fileName, aiProcess_ConvertToLeftHanded | aiProcess_Triangulate);
 
+	unsigned int totalVertexCount = 0;
 	unsigned int indexCounter = 0;
+
 	for (size_t currentMesh = 0; currentMesh < scene->mNumMeshes; currentMesh++)
 	{
 		const aiMesh* mesh = scene->mMeshes[currentMesh];
@@ -170,16 +172,20 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 			unsigned int currentNumberIndices = currentFace.mNumIndices;
 			for (size_t j = 0; j < currentNumberIndices; j++)
 			{
-				indices[currentBaseIndexLocation] = currentBaseVertexLocation + currentFace.mIndices[j];
+				indices[currentBaseIndexLocation] = totalVertexCount + currentFace.mIndices[j];
 				currentBaseIndexLocation++;
 				indexCounter++;
 			}
 		}
 
 		currentBaseVertexLocation += vertexCounter;
+		totalVertexCount += vertexCounter;
 	}
 
 	newSubSystem.indexCount = indexCounter;
+
+	XMFLOAT3* meshPositions = positions + newSubSystem.baseVertexLocation;
+	BoundingOrientedBox::CreateFromPoints(newSubSystem.box, totalVertexCount, meshPositions, sizeof(XMFLOAT3));
 
 	subSystemData[subSystemName] = newSubSystem;
 }

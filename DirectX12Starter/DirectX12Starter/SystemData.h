@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <unordered_map>
-#include <DirectXMath.h>
 #include <d3d12.h>
+#include <DirectXMath.h>
+#include <DirectXCollision.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -17,6 +17,8 @@ struct SubSystem
 	uint32_t baseVertexLocation;
 	uint32_t baseIndexLocation;
 	uint16_t indexCount;
+
+	BoundingOrientedBox box;
 
 	SubSystem()
 	{

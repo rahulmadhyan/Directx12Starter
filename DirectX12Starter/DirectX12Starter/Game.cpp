@@ -58,7 +58,7 @@ bool Game::Initialize()
 
 	// wait until initialization is complete
 	FlushCommandQueue();
-		
+	
 	return true;
 }
 
@@ -88,7 +88,7 @@ void Game::Update(const Timer &timer)
 	mainCamera.Update();
 	inputManager->UpdateController();
 
-	player->Update(timer, playerEntities[0]);
+	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);
@@ -456,19 +456,29 @@ void Game::BuildShadersAndInputLayout()
 
 void Game::BuildGeometry()
 {
+	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "Player");
+	SubmeshGeometry playerSubmesh;
+	SubSystem playerSubSystem = systemData->GetSubSystem("Player");
+	playerSubmesh.IndexCount = playerSubSystem.indexCount;
+	playerSubmesh.StartIndexLocation = playerSubSystem.baseIndexLocation;
+	playerSubmesh.BaseVertexLocation = playerSubSystem.baseVertexLocation;
+	playerSubmesh.Bounds = playerSubSystem.box;
+
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
 	SubmeshGeometry box1Submesh;
 	SubSystem box1SubSystem = systemData->GetSubSystem("box1");
 	box1Submesh.IndexCount = box1SubSystem.indexCount;
 	box1Submesh.StartIndexLocation = box1SubSystem.baseIndexLocation;
 	box1Submesh.BaseVertexLocation = box1SubSystem.baseVertexLocation;
+	box1Submesh.Bounds = box1SubSystem.box;
 
-	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "cylinder");
+	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
 	SubmeshGeometry cylinderSubmesh;
 	SubSystem cylinderSubSystem = systemData->GetSubSystem("cylinder");
 	cylinderSubmesh.IndexCount = cylinderSubSystem.indexCount;
 	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseIndexLocation;
 	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseVertexLocation;
+	cylinderSubmesh.Bounds = cylinderSubSystem.box;
 
 	const uint16_t systemDataVertexSize = systemData->GetCurrentBaseVertexLocation();
 	const uint16_t systemDataIndexSize = systemData->GetCurrentBaseIndexLocation();
@@ -519,6 +529,7 @@ void Game::BuildGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
+	geo->DrawArgs["Player"] = playerSubmesh;
 	geo->DrawArgs["box1"] = box1Submesh;
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 
@@ -596,15 +607,16 @@ void Game::BuildEntities()
 	playerEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
-	systemData->SetTranslation(currentEntityIndex, 3.0f, 3.5f, 0.0f);
+	systemData->SetTranslation(currentEntityIndex, 3.0f, 2.0f, 0.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
 	playerEntity->Mat = Materials["demo2"].get();
 	playerEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	playerEntity->IndexCount = playerEntity->Geo->DrawArgs["cylinder"].IndexCount;
-	playerEntity->StartIndexLocation = playerEntity->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	playerEntity->BaseVertexLocation = playerEntity->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	playerEntity->IndexCount = playerEntity->Geo->DrawArgs["Player"].IndexCount;
+	playerEntity->StartIndexLocation = playerEntity->Geo->DrawArgs["Player"].StartIndexLocation;
+	playerEntity->BaseVertexLocation = playerEntity->Geo->DrawArgs["Player"].BaseVertexLocation;
+	playerEntity->boudingBox = playerEntity->Geo->DrawArgs["Player"].Bounds;
 	allEntities.push_back(std::move(playerEntity));
 	playerEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -621,6 +633,7 @@ void Game::BuildEntities()
 	sceneEntity1->IndexCount = sceneEntity1->Geo->DrawArgs["box1"].IndexCount;
 	sceneEntity1->StartIndexLocation = sceneEntity1->Geo->DrawArgs["box1"].StartIndexLocation;
 	sceneEntity1->BaseVertexLocation = sceneEntity1->Geo->DrawArgs["box1"].BaseVertexLocation;
+	sceneEntity1->boudingBox = sceneEntity1->Geo->DrawArgs["box1"].Bounds;
 	allEntities.push_back(std::move(sceneEntity1));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -638,6 +651,7 @@ void Game::BuildEntities()
 	sceneEntity2->IndexCount = sceneEntity2->Geo->DrawArgs["box1"].IndexCount;
 	sceneEntity2->StartIndexLocation = sceneEntity2->Geo->DrawArgs["box1"].StartIndexLocation;
 	sceneEntity2->BaseVertexLocation = sceneEntity2->Geo->DrawArgs["box1"].BaseVertexLocation;
+	sceneEntity2->boudingBox = sceneEntity2->Geo->DrawArgs["box1"].Bounds;
 	allEntities.push_back(std::move(sceneEntity2));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -645,8 +659,8 @@ void Game::BuildEntities()
 
 	auto enemyEntity1 = std::make_unique<Entity>();
 	enemyEntity1->SystemWorldIndex = currentEntityIndex;
-	systemData->SetTranslation(currentEntityIndex, 18.0f, 1.75f, 8.0f);
-	systemData->SetScale(currentEntityIndex, 0.5f, 0.5f, 0.5f);
+	systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 18.0f, 2.0f, 8.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity1->ObjCBIndex = currentObjCBIndex;
 	enemyEntity1->Geo = Geometries["shapeGeo"].get();
@@ -655,6 +669,7 @@ void Game::BuildEntities()
 	enemyEntity1->IndexCount = enemyEntity1->Geo->DrawArgs["cylinder"].IndexCount;
 	enemyEntity1->StartIndexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].StartIndexLocation;
 	enemyEntity1->BaseVertexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	enemyEntity1->boudingBox = enemyEntity1->Geo->DrawArgs["cylinder"].Bounds;
 	allEntities.push_back(std::move(enemyEntity1));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -662,8 +677,8 @@ void Game::BuildEntities()
 
 	auto enemyEntity2 = std::make_unique<Entity>();
 	enemyEntity2->SystemWorldIndex = currentEntityIndex;
-	systemData->SetTranslation(currentEntityIndex, 22.0f, 1.75f, 4.0f);
-	systemData->SetScale(currentEntityIndex, 0.5f, 0.5f, 0.5f);
+	systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 22.0f, 2.0f, 4.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity2->ObjCBIndex = currentObjCBIndex;
 	enemyEntity2->Geo = Geometries["shapeGeo"].get();
@@ -672,6 +687,7 @@ void Game::BuildEntities()
 	enemyEntity2->IndexCount = enemyEntity2->Geo->DrawArgs["cylinder"].IndexCount;
 	enemyEntity2->StartIndexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].StartIndexLocation;
 	enemyEntity2->BaseVertexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	enemyEntity2->boudingBox = enemyEntity2->Geo->DrawArgs["cylinder"].Bounds;
 	allEntities.push_back(std::move(enemyEntity2));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
