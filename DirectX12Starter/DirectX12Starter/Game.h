@@ -10,6 +10,7 @@
 #include "Player.h"
 #include "Enemies.h"
 
+#ifdef _DEBUG
 #include <DirectXColors.h>
 #include "DebugDraw.h"
 #include "GraphicsMemory.h"
@@ -19,6 +20,7 @@
 #include "CommonStates.h"
 #include "EffectPipelineStateDescription.h"
 #include "VertexTypes.h"
+#endif
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -35,6 +37,15 @@ public:
 	virtual bool Initialize()override;
 
 private:
+#ifdef _DEBUG
+	std::unique_ptr<DirectX::GraphicsMemory> graphicsMemory;
+	std::unique_ptr<DirectX::BasicEffect> effect;
+	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> batch;
+
+	void InitDebugDraw();
+	void DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+#endif // DEBUG
+
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
 	FrameResource* currentFrameResource = nullptr;
 	int currentFrameResourceIndex = 0;
@@ -73,10 +84,6 @@ private:
 	Player *player;
 
 	Enemies *enemies;
-
-	std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
-	std::unique_ptr<DirectX::BasicEffect> m_effect;
-	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;
