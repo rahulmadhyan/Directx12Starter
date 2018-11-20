@@ -10,6 +10,16 @@
 #include "Player.h"
 #include "Enemies.h"
 
+#include <DirectXColors.h>
+#include "DebugDraw.h"
+#include "GraphicsMemory.h"
+#include "PrimitiveBatch.h"
+#include "RenderTargetState.h"
+#include "Effects.h"
+#include "CommonStates.h"
+#include "EffectPipelineStateDescription.h"
+#include "VertexTypes.h"
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -63,6 +73,10 @@ private:
 	Player *player;
 
 	Enemies *enemies;
+
+	std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
+	std::unique_ptr<DirectX::BasicEffect> m_effect;
+	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;
 
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;

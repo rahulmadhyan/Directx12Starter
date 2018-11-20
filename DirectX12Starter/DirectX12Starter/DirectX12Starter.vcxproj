@@ -156,6 +156,7 @@
     <ClInclude Include="d3dUtil.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="DXCore.h" />
     <ClInclude Include="Enemies.h" />
     <ClInclude Include="FrameResource.h" />
@@ -179,6 +180,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="d3dUtil.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="DXCore.cpp" />
     <ClCompile Include="Enemies.cpp" />
     <ClCompile Include="FrameResource.cpp" />

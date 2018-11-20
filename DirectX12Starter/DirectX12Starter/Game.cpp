@@ -59,7 +59,23 @@ bool Game::Initialize()
 	// wait until initialization is complete
 	FlushCommandQueue();
 	
-	return true;
+	m_graphicsMemory = std::make_unique<GraphicsMemory>(Device.Get());
+
+	m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(Device.Get());
+
+	RenderTargetState rtState(BackBufferFormat, DepthStencilFormat);
+
+	EffectPipelineStateDescription pd(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullNone,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+
+	m_effect = std::make_unique<BasicEffect>(Device.Get(), EffectFlags::VertexColor, pd);
+
+ 	return true;
 }
 
 void Game::Resize()
@@ -133,6 +149,8 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
+
+	m_graphicsMemory->Commit(CommandQueue.Get());
 
 	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -710,6 +728,25 @@ void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<En
 		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
 		cmdList->DrawIndexedInstanced(e->meshData.IndexCount, 1, e->meshData.StartIndexLocation, e->meshData.BaseVertexLocation, 0);
+
+		const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+		XMMATRIX world = DirectX::XMLoadFloat4x4(currentWorldMatrix);
+
+		XMMATRIX proj = DirectX::XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
+
+		XMMATRIX view = DirectX::XMLoadFloat4x4(&mainCamera.GetViewMatrix());
+
+		m_effect->SetMatrices(world, view, proj);
+
+		m_effect->Apply(cmdList);
+		m_batch->Begin(cmdList);
+
+		DX::Draw(m_batch.get(), e->meshData.Bounds, DirectX::Colors::Red);
+
+		m_batch->End();
+
+		cmdList->SetPipelineState(PSOs["opaque"].Get());
+		cmdList->SetGraphicsRootSignature(rootSignature.Get());
 	}
 }
 
