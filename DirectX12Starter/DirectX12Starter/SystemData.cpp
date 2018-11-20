@@ -79,7 +79,7 @@ const XMFLOAT3* SystemData::GetUVs()
 	return uvs;
 }
 
-SubSystem SystemData::GetSubSystem(char* subSystemName) const
+SubmeshGeometry SystemData::GetSubSystem(char* subSystemName) const
 {
 	return subSystemData.at(subSystemName);
 }
@@ -135,9 +135,9 @@ void SystemData::SetWorldMatrix(UINT worldIndex)
 
 void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName)
 {
-	SubSystem newSubSystem;
-	newSubSystem.baseVertexLocation = currentBaseVertexLocation;
-	newSubSystem.baseIndexLocation = currentBaseIndexLocation;
+	SubmeshGeometry newSubSystem;
+	newSubSystem.BaseVertexLocation = currentBaseVertexLocation;
+	newSubSystem.StartIndexLocation = currentBaseIndexLocation;
 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(fileName, aiProcess_ConvertToLeftHanded | aiProcess_Triangulate);
@@ -182,10 +182,10 @@ void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device
 		totalVertexCount += vertexCounter;
 	}
 
-	newSubSystem.indexCount = indexCounter;
+	newSubSystem.IndexCount = indexCounter;
 
-	XMFLOAT3* meshPositions = positions + newSubSystem.baseVertexLocation;
-	BoundingOrientedBox::CreateFromPoints(newSubSystem.box, totalVertexCount, meshPositions, sizeof(XMFLOAT3));
+	XMFLOAT3* meshPositions = positions + newSubSystem.BaseVertexLocation;
+	BoundingOrientedBox::CreateFromPoints(newSubSystem.Bounds, totalVertexCount, meshPositions, sizeof(XMFLOAT3));
 
 	subSystemData[subSystemName] = newSubSystem;
 }

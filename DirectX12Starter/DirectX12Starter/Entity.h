@@ -32,12 +32,14 @@ struct Entity
 	// Primitive topology.
 	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	// DrawIndexedInstanced parameters.
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
+	SubmeshGeometry meshData;
 
-	BoundingOrientedBox boudingBox;
+	//// DrawIndexedInstanced parameters.
+	//UINT IndexCount = 0;
+	//UINT StartIndexLocation = 0;
+	//int BaseVertexLocation = 0;
+
+	//BoundingOrientedBox boudingBox;
 
 	XMFLOAT4X4 TextureTransform = MathHelper::Identity4x4();
 

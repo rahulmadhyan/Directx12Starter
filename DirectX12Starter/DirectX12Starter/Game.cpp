@@ -457,28 +457,13 @@ void Game::BuildShadersAndInputLayout()
 void Game::BuildGeometry()
 {
 	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "Player");
-	SubmeshGeometry playerSubmesh;
-	SubSystem playerSubSystem = systemData->GetSubSystem("Player");
-	playerSubmesh.IndexCount = playerSubSystem.indexCount;
-	playerSubmesh.StartIndexLocation = playerSubSystem.baseIndexLocation;
-	playerSubmesh.BaseVertexLocation = playerSubSystem.baseVertexLocation;
-	playerSubmesh.Bounds = playerSubSystem.box;
+	SubmeshGeometry playerSubMesh = systemData->GetSubSystem("Player");
 
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
-	SubmeshGeometry box1Submesh;
-	SubSystem box1SubSystem = systemData->GetSubSystem("box1");
-	box1Submesh.IndexCount = box1SubSystem.indexCount;
-	box1Submesh.StartIndexLocation = box1SubSystem.baseIndexLocation;
-	box1Submesh.BaseVertexLocation = box1SubSystem.baseVertexLocation;
-	box1Submesh.Bounds = box1SubSystem.box;
+	SubmeshGeometry box1SubMesh = systemData->GetSubSystem("box1");
 
 	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
-	SubmeshGeometry cylinderSubmesh;
-	SubSystem cylinderSubSystem = systemData->GetSubSystem("cylinder");
-	cylinderSubmesh.IndexCount = cylinderSubSystem.indexCount;
-	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseIndexLocation;
-	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseVertexLocation;
-	cylinderSubmesh.Bounds = cylinderSubSystem.box;
+	SubmeshGeometry cylinderSubMesh = systemData->GetSubSystem("cylinder");
 
 	const uint16_t systemDataVertexSize = systemData->GetCurrentBaseVertexLocation();
 	const uint16_t systemDataIndexSize = systemData->GetCurrentBaseIndexLocation();
@@ -529,9 +514,9 @@ void Game::BuildGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	geo->DrawArgs["Player"] = playerSubmesh;
-	geo->DrawArgs["box1"] = box1Submesh;
-	geo->DrawArgs["cylinder"] = cylinderSubmesh;
+	geo->DrawArgs["Player"] = playerSubMesh;
+	geo->DrawArgs["box1"] = box1SubMesh;
+	geo->DrawArgs["cylinder"] = cylinderSubMesh;
 
 	Geometries[geo->Name] = std::move(geo);
 }
@@ -613,10 +598,7 @@ void Game::BuildEntities()
 	playerEntity->Geo = Geometries["shapeGeo"].get();
 	playerEntity->Mat = Materials["demo2"].get();
 	playerEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	playerEntity->IndexCount = playerEntity->Geo->DrawArgs["Player"].IndexCount;
-	playerEntity->StartIndexLocation = playerEntity->Geo->DrawArgs["Player"].StartIndexLocation;
-	playerEntity->BaseVertexLocation = playerEntity->Geo->DrawArgs["Player"].BaseVertexLocation;
-	playerEntity->boudingBox = playerEntity->Geo->DrawArgs["Player"].Bounds;
+	playerEntity->meshData = playerEntity->Geo->DrawArgs["Player"];
 	allEntities.push_back(std::move(playerEntity));
 	playerEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -630,10 +612,7 @@ void Game::BuildEntities()
 	sceneEntity1->Geo = Geometries["shapeGeo"].get();
 	sceneEntity1->Mat = Materials["demo1"].get();
 	sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity1->IndexCount = sceneEntity1->Geo->DrawArgs["box1"].IndexCount;
-	sceneEntity1->StartIndexLocation = sceneEntity1->Geo->DrawArgs["box1"].StartIndexLocation;
-	sceneEntity1->BaseVertexLocation = sceneEntity1->Geo->DrawArgs["box1"].BaseVertexLocation;
-	sceneEntity1->boudingBox = sceneEntity1->Geo->DrawArgs["box1"].Bounds;
+	sceneEntity1->meshData = sceneEntity1->Geo->DrawArgs["box1"];
 	allEntities.push_back(std::move(sceneEntity1));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -648,10 +627,7 @@ void Game::BuildEntities()
 	sceneEntity2->Geo = Geometries["shapeGeo"].get();
 	sceneEntity2->Mat = Materials["demo2"].get();
 	sceneEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity2->IndexCount = sceneEntity2->Geo->DrawArgs["box1"].IndexCount;
-	sceneEntity2->StartIndexLocation = sceneEntity2->Geo->DrawArgs["box1"].StartIndexLocation;
-	sceneEntity2->BaseVertexLocation = sceneEntity2->Geo->DrawArgs["box1"].BaseVertexLocation;
-	sceneEntity2->boudingBox = sceneEntity2->Geo->DrawArgs["box1"].Bounds;
+	sceneEntity2->meshData = sceneEntity2->Geo->DrawArgs["box1"];
 	allEntities.push_back(std::move(sceneEntity2));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -666,10 +642,7 @@ void Game::BuildEntities()
 	enemyEntity1->Geo = Geometries["shapeGeo"].get();
 	enemyEntity1->Mat = Materials["demo1"].get();
 	enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity1->IndexCount = enemyEntity1->Geo->DrawArgs["cylinder"].IndexCount;
-	enemyEntity1->StartIndexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	enemyEntity1->BaseVertexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-	enemyEntity1->boudingBox = enemyEntity1->Geo->DrawArgs["cylinder"].Bounds;
+	enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity1));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -684,10 +657,7 @@ void Game::BuildEntities()
 	enemyEntity2->Geo = Geometries["shapeGeo"].get();
 	enemyEntity2->Mat = Materials["demo1"].get();
 	enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity2->IndexCount = enemyEntity2->Geo->DrawArgs["cylinder"].IndexCount;
-	enemyEntity2->StartIndexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	enemyEntity2->BaseVertexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].BaseVertexLocation;
-	enemyEntity2->boudingBox = enemyEntity2->Geo->DrawArgs["cylinder"].Bounds;
+	enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity2));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -739,7 +709,7 @@ void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<En
 
 		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-		cmdList->DrawIndexedInstanced(e->IndexCount, 1, e->StartIndexLocation, e->BaseVertexLocation, 0);
+		cmdList->DrawIndexedInstanced(e->meshData.IndexCount, 1, e->meshData.StartIndexLocation, e->meshData.BaseVertexLocation, 0);
 	}
 }
 

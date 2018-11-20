@@ -7,26 +7,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include "d3dUtil.h"
 #include "Vertex.h"
 #include "wrl.h"
 
 using namespace DirectX;
-
-struct SubSystem
-{
-	uint32_t baseVertexLocation;
-	uint32_t baseIndexLocation;
-	uint16_t indexCount;
-
-	BoundingOrientedBox box;
-
-	SubSystem()
-	{
-		baseVertexLocation = 0;
-		baseIndexLocation = 0;
-		indexCount = 0;
-	}
-};
 
 class SystemData
 {
@@ -43,7 +28,7 @@ public:
 	const XMFLOAT3* GetNormals();
 	const XMFLOAT3* GetUVs();
 
-	SubSystem GetSubSystem(char* subSystemName) const;
+	SubmeshGeometry GetSubSystem(char* subSystemName) const;
 
 	const XMFLOAT3* GetWorldPosition(UINT index);
 	const XMFLOAT3* GetWorldRotation(UINT index);
@@ -74,6 +59,6 @@ private:
 
 	XMFLOAT4X4* worldMatrices;
 
-	std::unordered_map<char*, SubSystem> subSystemData;
+	std::unordered_map<char*, SubmeshGeometry> subSystemData;
 };
 

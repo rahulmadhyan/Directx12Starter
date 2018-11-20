@@ -76,7 +76,7 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 
 				std::wstringstream out;
 
-				if (enemy->boudingBox.Intersects(rayOrigin, rayDirection, shootingRay.distance))
+				if (enemy->meshData.Bounds.Intersects(rayOrigin, rayDirection, shootingRay.distance))
 				{
 					out << "TRUE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
 				}
