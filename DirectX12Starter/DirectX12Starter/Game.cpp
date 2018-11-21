@@ -46,6 +46,32 @@ void Game::DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entit
 		batch->End();
 	}
 }
+
+void Game::DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
+{
+	const Ray* playerRay = player->GetRay();
+
+	auto e = entities[0];
+
+	const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+	XMMATRIX world = DirectX::XMLoadFloat4x4(currentWorldMatrix);
+
+	XMMATRIX proj = DirectX::XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
+
+	XMMATRIX view = DirectX::XMLoadFloat4x4(&mainCamera.GetViewMatrix());
+
+	effect->Apply(cmdList);
+	batch->Begin(cmdList);
+
+	XMVECTOR origin = XMVectorSet(0.0f, 0.0f, 0.0, 0.0f);
+
+	XMVECTOR direction = XMLoadFloat3(&playerRay->direction);
+	direction = XMVectorScale(direction, playerRay->distance);
+
+	DX::DrawRay(batch.get(), origin, direction, false, DirectX::Colors::Red);
+
+	batch->End();
+}
 #endif // _DEBUG
 
 Game::Game(HINSTANCE hInstance) : DXCore(hInstance)
@@ -186,6 +212,7 @@ void Game::Draw(const Timer &timer)
 
 #ifdef _DEBUG
 	DebugDraw(CommandList.Get(), playerEntities);
+	DebugDrawPlayerRay(CommandList.Get(), playerEntities);
 	DebugDraw(CommandList.Get(), enemyEntities);
 	graphicsMemory->Commit(CommandQueue.Get());
 #endif // _DEBUG

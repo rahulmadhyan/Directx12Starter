@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "Ray.h"
 #include <string>
+
 using namespace DirectX;
 
 class Player
@@ -14,6 +15,8 @@ class Player
 public:
 	Player(SystemData *systemData);
 	~Player();
+
+	const Ray* GetRay() const;
 
 	void Update(const Timer &timer, Entity *playerEntity, std::vector<Entity*> enemyEntities);
 
@@ -24,7 +27,7 @@ private:
 	
 	float moveRate;
 
-	Ray shootingRay;
+	Ray* shootingRay;
 
 	SystemData* systemData;
 };

@@ -10,14 +10,20 @@ Player::Player(SystemData *systemData) : systemData(systemData)
 
 	moveRate = 0.0001f;
 
-	shootingRay.origin = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	shootingRay.direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	shootingRay.distance = 20.0f;
+	shootingRay = new Ray();
+	shootingRay->origin = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	shootingRay->direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	shootingRay->distance = 50.0f;
 }
 
 Player::~Player()
 {
+	delete shootingRay;
+}
 
+const Ray* Player::GetRay() const
+{
+	return shootingRay;
 }
 
 void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity*> enemyEntities)
@@ -59,10 +65,10 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 		{
 			for (auto enemy : enemyEntities)
 			{
-				shootingRay.origin = *(systemData->GetWorldPosition(playerEntityIndex));
-				XMVECTOR rayOrigin = XMLoadFloat3(&(shootingRay.origin));
+				shootingRay->origin = *(systemData->GetWorldPosition(playerEntityIndex));
+				XMVECTOR rayOrigin = XMLoadFloat3(&(shootingRay->origin));
 
-				XMVECTOR rayDirection = XMLoadFloat3(&(shootingRay.direction));
+				XMVECTOR rayDirection = XMLoadFloat3(&(shootingRay->direction));
 				rayDirection = XMVector3Transform(rayDirection, rotationMatrix);
 
 				XMMATRIX W = XMLoadFloat4x4(systemData->GetWorldMatrix(enemy->SystemWorldIndex));
@@ -74,9 +80,11 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 				// Make the ray direction unit length for the intersection tests.
 				rayDirection = XMVector3Normalize(rayDirection);
 
+				float rayDistance = shootingRay->distance;
+
 				std::wstringstream out;
 
-				if (enemy->meshData.Bounds.Intersects(rayOrigin, rayDirection, shootingRay.distance))
+				if (enemy->meshData.Bounds.Intersects(rayOrigin, rayDirection, rayDistance))
 				{
 					out << "TRUE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
 				}

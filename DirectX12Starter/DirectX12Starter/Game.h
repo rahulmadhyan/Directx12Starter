@@ -9,6 +9,7 @@
 #include "DDSTextureLoader.h"
 #include "Player.h"
 #include "Enemies.h"
+#include "Ray.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -44,6 +45,7 @@ private:
 
 	void InitDebugDraw();
 	void DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+	void DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
 #endif // DEBUG
 
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
