@@ -2,6 +2,78 @@
 
 const int gNumberFrameResources = 3;
 
+#ifdef _DEBUG
+void Game::InitDebugDraw()
+{
+	graphicsMemory = std::make_unique<GraphicsMemory>(Device.Get());
+
+	batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(Device.Get());
+
+	RenderTargetState rtState(BackBufferFormat, DepthStencilFormat);
+
+	EffectPipelineStateDescription pd(
+		&VertexPositionColor::InputLayout,
+		CommonStates::Opaque,
+		CommonStates::DepthDefault,
+		CommonStates::CullNone,
+		rtState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+
+	effect = std::make_unique<BasicEffect>(Device.Get(), EffectFlags::VertexColor, pd);
+}
+
+void Game::DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
+{
+	// For each render item...
+	for (size_t i = 0; i < entities.size(); ++i)
+	{
+		auto e = entities[i];
+
+		const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+		XMMATRIX world = DirectX::XMLoadFloat4x4(currentWorldMatrix);
+
+		XMMATRIX proj = DirectX::XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
+
+		XMMATRIX view = DirectX::XMLoadFloat4x4(&mainCamera.GetViewMatrix());
+
+		effect->SetMatrices(world, view, proj);
+
+		effect->Apply(cmdList);
+		batch->Begin(cmdList);
+
+		DX::Draw(batch.get(), e->meshData.Bounds, DirectX::Colors::Red);
+
+		batch->End();
+	}
+}
+
+void Game::DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
+{
+	const Ray* playerRay = player->GetRay();
+
+	auto e = entities[0];
+
+	const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+	XMMATRIX world = DirectX::XMLoadFloat4x4(currentWorldMatrix);
+
+	XMMATRIX proj = DirectX::XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
+
+	XMMATRIX view = DirectX::XMLoadFloat4x4(&mainCamera.GetViewMatrix());
+
+	effect->Apply(cmdList);
+	batch->Begin(cmdList);
+
+	XMVECTOR origin = XMVectorSet(0.0f, 0.0f, 0.0, 0.0f);
+
+	XMVECTOR direction = XMLoadFloat3(&playerRay->direction);
+	direction = XMVectorScale(direction, playerRay->distance);
+
+	DX::DrawRay(batch.get(), origin, direction, false, DirectX::Colors::Red);
+
+	batch->End();
+}
+#endif // _DEBUG
+
 Game::Game(HINSTANCE hInstance) : DXCore(hInstance)
 {
 
@@ -30,13 +102,17 @@ bool Game::Initialize()
 	// reset the command list to prep for initialization commands
 	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), nullptr));
 
+#ifdef _DEBUG
+	InitDebugDraw();
+#endif // _DEBUG
+
 	systemData = new SystemData();
 
 	mainCamera = Camera(screenWidth, screenHeight);
 
 	inputManager = InputManager::getInstance();
 
-	player = new Player();
+	player = new Player(systemData);
 
 	enemies = new Enemies();
 
@@ -58,8 +134,8 @@ bool Game::Initialize()
 
 	// wait until initialization is complete
 	FlushCommandQueue();
-		
-	return true;
+	
+ 	return true;
 }
 
 void Game::Resize()
@@ -134,6 +210,13 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
 
+#ifdef _DEBUG
+	DebugDraw(CommandList.Get(), playerEntities);
+	DebugDrawPlayerRay(CommandList.Get(), playerEntities);
+	DebugDraw(CommandList.Get(), enemyEntities);
+	graphicsMemory->Commit(CommandQueue.Get());
+#endif // _DEBUG
+
 	// indicate a state transition on the resource usage
 	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -167,7 +250,8 @@ void Game::UpdateObjectCBs(const Timer & timer)
 		// This needs to be tracked per frame resource.
 		if (e->NumFramesDirty > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+ 			XMMATRIX world = XMLoadFloat4x4(currentWorldMatrix);
 			XMMATRIX textureTransform = XMLoadFloat4x4(&e->TextureTransform);
 
 			ObjectConstants objConstants;
@@ -461,37 +545,38 @@ void Game::BuildShadersAndInputLayout()
 
 void Game::BuildGeometry()
 {
+	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "Player");
+	SubmeshGeometry playerSubMesh = systemData->GetSubSystem("Player");
+
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
-	SubmeshGeometry box1Submesh;
-	SubSystem box1SubSystem = systemData->GetSubSystem("box1");
-	box1Submesh.IndexCount = box1SubSystem.count;
-	box1Submesh.StartIndexLocation = box1SubSystem.baseLocation;
-	box1Submesh.BaseVertexLocation = box1SubSystem.baseLocation;
+	SubmeshGeometry box1SubMesh = systemData->GetSubSystem("box1");
 
 	systemData->LoadOBJFile("Resources/Models/cylinder.obj", Device, "cylinder");
-	SubmeshGeometry cylinderSubmesh;
-	SubSystem cylinderSubSystem = systemData->GetSubSystem("cylinder");
-	cylinderSubmesh.IndexCount = cylinderSubSystem.count;
-	cylinderSubmesh.StartIndexLocation = cylinderSubSystem.baseLocation;
-	cylinderSubmesh.BaseVertexLocation = cylinderSubSystem.baseLocation;
+	SubmeshGeometry cylinderSubMesh = systemData->GetSubSystem("cylinder");
 
-	const uint16_t systemDataSize = systemData->GetCurrentBaseLocation();
+	const uint16_t systemDataVertexSize = systemData->GetCurrentBaseVertexLocation();
+	const uint16_t systemDataIndexSize = systemData->GetCurrentBaseIndexLocation();
 
-	std::vector<Vertex> vertices(systemDataSize);
-	std::vector<std::uint16_t> indices(systemDataSize);
+	std::vector<Vertex> vertices(systemDataVertexSize);
+	std::vector<std::uint16_t> indices(systemDataIndexSize);
 	UINT k = 0;
 
-	const XMFLOAT3* systemPositions = systemData->GetPositions();
+ 	const XMFLOAT3* systemPositions = systemData->GetPositions();
 	const XMFLOAT3* systemNormals = systemData->GetNormals();
-	const XMFLOAT2* systemUvs = systemData->GetUvs();
+	const XMFLOAT3* systemUvs = systemData->GetUVs();
 
 	const uint16_t* systemIndices = systemData->GetIndices();
 
-	for (size_t i = 0; i < systemDataSize; ++i, ++k)
+	for (size_t i = 0; i < systemDataVertexSize; ++i, ++k)
 	{
 		vertices[k].Position = systemPositions[i];
 		vertices[k].Normal = systemNormals[i];
-		vertices[k].UV = systemUvs[i];
+		vertices[k].UV = XMFLOAT2(systemUvs[i].x, systemUvs[i].y);
+	}
+
+	k = 0;
+	for (size_t i = 0; i < systemDataIndexSize; ++i, ++k)
+	{
 		indices[k] = systemIndices[i];
 	}
 
@@ -518,8 +603,9 @@ void Game::BuildGeometry()
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	geo->DrawArgs["box1"] = box1Submesh;
-	geo->DrawArgs["cylinder"] = cylinderSubmesh;
+	geo->DrawArgs["Player"] = playerSubMesh;
+	geo->DrawArgs["box1"] = box1SubMesh;
+	geo->DrawArgs["cylinder"] = cylinderSubMesh;
 
 	Geometries[geo->Name] = std::move(geo);
 }
@@ -592,79 +678,75 @@ void Game::BuildEntities()
 	int currentObjCBIndex = 0;
 
 	auto playerEntity = std::make_unique<Entity>();
-	playerEntity->SetScale(1.0f, 4.0f, 1.0f);
-	playerEntity->SetTranslation(3.0f, 2.0f, 0.0f);
-	playerEntity->SetWorldMatrix();
+	playerEntity->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
+	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
+	systemData->SetTranslation(currentEntityIndex, 3.0f, 2.0f, 0.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
 	playerEntity->Mat = Materials["demo2"].get();
 	playerEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	playerEntity->IndexCount = playerEntity->Geo->DrawArgs["cylinder"].IndexCount;
-	playerEntity->StartIndexLocation = playerEntity->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	playerEntity->BaseVertexLocation = playerEntity->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	playerEntity->meshData = playerEntity->Geo->DrawArgs["Player"];
 	allEntities.push_back(std::move(playerEntity));
 	playerEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
 	auto sceneEntity1 = std::make_unique<Entity>();
-	sceneEntity1->SetScale(20.0f, 0.25f, 20.0f);
-	sceneEntity1->SetWorldMatrix();
+	sceneEntity1->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	sceneEntity1->ObjCBIndex = currentObjCBIndex;
 	sceneEntity1->Geo = Geometries["shapeGeo"].get();
 	sceneEntity1->Mat = Materials["demo1"].get();
 	sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity1->IndexCount = sceneEntity1->Geo->DrawArgs["box1"].IndexCount;
-	sceneEntity1->StartIndexLocation = sceneEntity1->Geo->DrawArgs["box1"].StartIndexLocation;
-	sceneEntity1->BaseVertexLocation = sceneEntity1->Geo->DrawArgs["box1"].BaseVertexLocation;
+	sceneEntity1->meshData = sceneEntity1->Geo->DrawArgs["box1"];
 	allEntities.push_back(std::move(sceneEntity1));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
 	auto sceneEntity2 = std::make_unique<Entity>();
-	sceneEntity2->SetTranslation(20.0f, 0.0f, 0.0f);
-	sceneEntity2->SetScale(20.0f, 0.25f, 20.0f);
-	sceneEntity2->SetWorldMatrix();
+	sceneEntity2->SystemWorldIndex = currentEntityIndex;
+	systemData->SetTranslation(currentEntityIndex, 20.0f, 0.0f, 0.0f);
+	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	sceneEntity2->ObjCBIndex = currentObjCBIndex;
 	sceneEntity2->Geo = Geometries["shapeGeo"].get();
 	sceneEntity2->Mat = Materials["demo2"].get();
 	sceneEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity2->IndexCount = sceneEntity2->Geo->DrawArgs["box1"].IndexCount;
-	sceneEntity2->StartIndexLocation = sceneEntity2->Geo->DrawArgs["box1"].StartIndexLocation;
-	sceneEntity2->BaseVertexLocation = sceneEntity2->Geo->DrawArgs["box1"].BaseVertexLocation;
+	sceneEntity2->meshData = sceneEntity2->Geo->DrawArgs["box1"];
 	allEntities.push_back(std::move(sceneEntity2));
 	sceneEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
 	auto enemyEntity1 = std::make_unique<Entity>();
-	enemyEntity1->SetTranslation(18.0f, 1.0f, 8.0f);
-	enemyEntity1->SetScale(1.0f, 2.0f, 1.0f);
-	enemyEntity1->SetWorldMatrix();
+	enemyEntity1->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 18.0f, 2.0f, 8.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity1->ObjCBIndex = currentObjCBIndex;
 	enemyEntity1->Geo = Geometries["shapeGeo"].get();
 	enemyEntity1->Mat = Materials["demo1"].get();
 	enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity1->IndexCount = enemyEntity1->Geo->DrawArgs["cylinder"].IndexCount;
-	enemyEntity1->StartIndexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	enemyEntity1->BaseVertexLocation = enemyEntity1->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity1));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
 	auto enemyEntity2 = std::make_unique<Entity>();
-	enemyEntity2->SetTranslation(22.0f, 1.0f, 4.0f);
-	enemyEntity2->SetScale(1.0f, 2.0f, 1.0f);
-	enemyEntity2->SetWorldMatrix();
+	enemyEntity2->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 22.0f, 2.0f, 4.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
 	enemyEntity2->ObjCBIndex = currentObjCBIndex;
 	enemyEntity2->Geo = Geometries["shapeGeo"].get();
 	enemyEntity2->Mat = Materials["demo1"].get();
 	enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity2->IndexCount = enemyEntity2->Geo->DrawArgs["cylinder"].IndexCount;
-	enemyEntity2->StartIndexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].StartIndexLocation;
-	enemyEntity2->BaseVertexLocation = enemyEntity2->Geo->DrawArgs["cylinder"].BaseVertexLocation;
+	enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity2));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
@@ -716,7 +798,7 @@ void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<En
 
 		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-		cmdList->DrawIndexedInstanced(e->IndexCount, 1, e->StartIndexLocation, e->BaseVertexLocation, 0);
+		cmdList->DrawIndexedInstanced(e->meshData.IndexCount, 1, e->meshData.StartIndexLocation, e->meshData.BaseVertexLocation, 0);
 	}
 }
 

@@ -9,6 +9,19 @@
 #include "DDSTextureLoader.h"
 #include "Player.h"
 #include "Enemies.h"
+#include "Ray.h"
+
+#ifdef _DEBUG
+#include <DirectXColors.h>
+#include "DebugDraw.h"
+#include "GraphicsMemory.h"
+#include "PrimitiveBatch.h"
+#include "RenderTargetState.h"
+#include "Effects.h"
+#include "CommonStates.h"
+#include "EffectPipelineStateDescription.h"
+#include "VertexTypes.h"
+#endif
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -25,6 +38,16 @@ public:
 	virtual bool Initialize()override;
 
 private:
+#ifdef _DEBUG
+	std::unique_ptr<DirectX::GraphicsMemory> graphicsMemory;
+	std::unique_ptr<DirectX::BasicEffect> effect;
+	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> batch;
+
+	void InitDebugDraw();
+	void DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+	void DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+#endif // DEBUG
+
 	std::vector<std::unique_ptr<FrameResource>> FrameResources;
 	FrameResource* currentFrameResource = nullptr;
 	int currentFrameResourceIndex = 0;
