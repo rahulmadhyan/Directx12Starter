@@ -87,6 +87,14 @@ private:
 
 	Enemies *enemies;
 
+	// Directional light angles
+	/*float mTheta = 1.5f * XM_PI;
+	float mPhi = XM_PIDIV2 - 0.1f;
+	float mRadius = 50.0f;*/
+
+	float mSunTheta = 1.25f * XM_PIDIV2;
+	float mSunPhi = XM_PIDIV4;
+
 	virtual void Resize()override;
 	virtual void Update(const Timer& timer)override;
 	virtual void Draw(const Timer& timer)override;

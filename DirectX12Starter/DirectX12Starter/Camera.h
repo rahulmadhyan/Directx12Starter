@@ -16,6 +16,8 @@ public:
 	XMFLOAT4X4 GetViewMatrix();
 	XMFLOAT4X4 GetProjectionMatrix();
 
+	XMFLOAT3 GetCameraPosition();
+
 	void SetXRotation(float amount);
 	void SetYRotation(float amount);
 	void SetProjectionMatrix(unsigned int newWidth, unsigned int newHeight);

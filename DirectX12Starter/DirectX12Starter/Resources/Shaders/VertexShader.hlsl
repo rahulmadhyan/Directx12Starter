@@ -1,3 +1,4 @@
+#include "LightingUtil.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -8,7 +9,12 @@ cbuffer cbPerObject : register(b0)
 cbuffer cbPass : register(b1)
 {
 	float4x4 view;
-	float4x4 projection;
+	float4x4 proj;
+	float3 eyePosW;
+	float cbPerObjectPad1;
+	float4 ambientLight;
+
+	Light lights[MaxLights];
 }
 
 cbuffer cbMaterial : register(b2)
@@ -37,8 +43,10 @@ VS_OUTPUT main(VS_INPUT input)
 {
 	VS_OUTPUT output;
 
+	// Transform to world space
+
 	float4 outPos = mul( float4(input.Position, 1.0f), world);
-	matrix viewProjection = mul(view, projection);
+	matrix viewProjection = mul(view, proj);
 	output.Position = mul(outPos, viewProjection);
 
 	output.Normal = mul(input.Normal, (float3x3)world);

@@ -14,6 +14,10 @@ struct PassConstants
 {
 	DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 Proj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+	float pad1 = 0.0f;
+	DirectX::XMFLOAT4 ambientLight = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	Light lights[MAX_LIGHTS];
 };
 
 // stores the resources needed for the CPU to build the command lists for a frame 

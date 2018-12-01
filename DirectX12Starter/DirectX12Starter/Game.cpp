@@ -164,8 +164,8 @@ void Game::Update(const Timer &timer)
 	mainCamera.Update();
 	inputManager->UpdateController();
 
-	player->Update(timer, playerEntities[0], enemyEntities);
-	enemies->Update(playerEntities[0], enemyEntities);
+	player->Update(timer, playerEntities[0]);
+	enemies->Update(timer, playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -272,9 +272,15 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	XMMATRIX projection = XMLoadFloat4x4(&mainCamera.GetProjectionMatrix()); 
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, projection);
-	
+
 	XMStoreFloat4x4(&MainPassCB.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(projection));
+
+	MainPassCB.CameraPosition = mainCamera.GetCameraPosition();
+	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+
+	MainPassCB.lights[0].Direction = { 1.0f, -1.0f, 1.0f };
+	MainPassCB.lights[0].Strength = { 1.0f, 1.0f, 0.9f };
 
 	auto currPassCB = currentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);

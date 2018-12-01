@@ -160,6 +160,8 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\Shaders\LightingUtil.hlsl">
+      <Filter>Shaders</Filter>
     <None Include="packages.config" />
   </ItemGroup>
 </Project>
