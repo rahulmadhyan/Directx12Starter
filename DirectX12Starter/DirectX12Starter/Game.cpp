@@ -476,6 +476,9 @@ void Game::BuildShadersAndInputLayout()
 	Shaders["VS"] = d3dUtil::CompileShader(L"Resources/Shaders/VertexShader.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["PS"] = d3dUtil::CompileShader(L"Resources/Shaders/PixelShader.hlsl", nullptr, "main", "ps_5_1");
 
+	Shaders["skyVS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyboxVS.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["skyPS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyboxPS.hlsl", nullptr, "main", "ps_5_1");
+
 	inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -577,6 +580,25 @@ void Game::BuildPSOs()
 	opaquePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPSODescription = opaquePSODescription;
+
+	skyPSODescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+	skyPSODescription.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	skyPSODescription.pRootSignature = rootSignature.Get();
+
+	skyPSODescription.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["skyVS"]->GetBufferPointer()),
+		Shaders["skyVS"]->GetBufferSize()
+	};
+	skyPSODescription.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["skyPS"]->GetBufferPointer()),
+		Shaders["skyPS"]->GetBufferSize()
+	};
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["sky"])));
 }
 
 void Game::BuildFrameResources()

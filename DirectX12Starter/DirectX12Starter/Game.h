@@ -14,6 +14,13 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
+enum class RenderLayer : int
+{
+	Opaque = 0,
+	Sky,
+	Count
+};
+
 class Game : public DXCore
 {
 public:
