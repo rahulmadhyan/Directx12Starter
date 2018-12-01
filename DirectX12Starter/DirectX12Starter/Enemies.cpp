@@ -4,6 +4,10 @@ Enemies::Enemies()
 {
 }
 
+Enemies::Enemies(SystemData *systemData) : systemData(systemData)
+{
+
+}
 
 Enemies::~Enemies()
 {
@@ -13,11 +17,11 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Entit
 {
 	const float deltaTime = timer.GetDeltaTime();
 
-	XMVECTOR playerPosition = XMLoadFloat3(&playerEntity->Position);
+	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
 
-	for (size_t i = 0; i < enemyEntities.size(); i++)
+	for (auto e : enemyEntities)
 	{
-		XMVECTOR enemyPosition = XMLoadFloat3(&enemyEntities[i]->Position);
+		XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
 		XMVECTOR differenceVector = XMVectorSubtract(playerPosition, enemyPosition);
 		XMVECTOR length = XMVector3Length(differenceVector);
 
@@ -28,10 +32,10 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Entit
 
 		if (distance < 20.0f && distance > 5.0f)
 		{
-			enemyEntities[i]->SetTranslation(XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
-			enemyEntities[i]->SetWorldMatrix();
+			systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
+			systemData->SetWorldMatrix(e->SystemWorldIndex);
 
-			enemyEntities[i]->NumFramesDirty = gNumberFrameResources;
+			e->NumFramesDirty = gNumberFrameResources;
 		}
 	}
 }

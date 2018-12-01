@@ -114,7 +114,7 @@ bool Game::Initialize()
 
 	player = new Player(systemData);
 
-	enemies = new Enemies();
+	enemies = new Enemies(systemData);
 
 	BuildTextures();
 	BuildRootSignature();
@@ -164,7 +164,7 @@ void Game::Update(const Timer &timer)
 	mainCamera.Update();
 	inputManager->UpdateController();
 
-	player->Update(timer, playerEntities[0]);
+	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
 
 	UpdateObjectCBs(timer);

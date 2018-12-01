@@ -47,7 +47,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	float4 difAlbedo = diffuseMap.Sample(sampleLinear, input.UV) * diffuseAlbedo;
 	input.Normal = normalize(input.Normal);
 
-	float toEyeNormal = normalize(eyePosW - input.Position);
+	float3 toEyeNormal = normalize(eyePosW - input.Position.xyz);
 
 	// ambient light
 	float4 ambient = ambientLight * difAlbedo;
@@ -55,7 +55,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	const float shininess = 1.0f - roughness;
 	Material mat = { difAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(lights, mat, input.Position, input.Normal, toEyeNormal, shadowFactor);
+	float4 directLight = ComputeLighting(lights, mat, input.Position.xyz, input.Normal, toEyeNormal, shadowFactor);
 
 	float4 litColor = directLight + ambient;
 
