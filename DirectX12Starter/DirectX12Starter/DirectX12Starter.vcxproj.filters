@@ -130,16 +130,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="DirectX12Starter.rc" />
+    <Image Include="DirectX12Starter.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="small.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="DirectX12Starter.ico" />
-    <Image Include="small.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Resources\Shaders\LightingUtil.hlsl">
       <Filter>Shader Files</Filter>
+    </None>
+    <None Include="packages.config">
+      <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -152,5 +155,13 @@
     <Filter Include="Shader Files">
       <UniqueIdentifier>{753d6f48-11f5-415b-9318-2355327ece7c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{1fc24c1a-f086-4883-b402-eca48460a845}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DirectX12Starter.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
