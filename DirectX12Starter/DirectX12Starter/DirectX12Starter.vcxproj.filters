@@ -7,6 +7,9 @@
     <FxCompile Include="Resources\Shaders\PixelShader.hlsl">
       <Filter>Shader Files</Filter>
     </FxCompile>
+    <FxCompile Include="Resources\Shaders\Common.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -144,6 +147,7 @@
     <None Include="packages.config">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Common.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
