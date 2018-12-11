@@ -47,10 +47,10 @@ cbuffer cbMaterial : register (b2)
 
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormal, float3 tangent)
 {
-	float3 nomral = 2.0f * normalMapSample - 1.0f;
+	float3 normal = 2.0f * normalMapSample - 1.0f;
 
 	float3 N = unitNormal;
-	float3 T = normalize(tangent - dot(tangetn, N) * N);
+	float3 T = normalize(tangent - dot(tangent, N) * N);
 	float3 B = cross(N, T);
 
 	float3x3 TBN = float3x3(T, B, N);

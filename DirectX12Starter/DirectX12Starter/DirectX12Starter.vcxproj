@@ -226,7 +226,9 @@
       </EntryPointName>
       <FileType>Document</FileType>
     </None>
-    <FxCompile Include="Resources\Shaders\Common.hlsl" />
+    <None Include="Resources\Shaders\Common.hlsl">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="Resources\Shaders\PixelShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
