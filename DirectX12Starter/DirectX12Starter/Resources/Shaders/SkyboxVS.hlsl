@@ -21,7 +21,7 @@ SKY_VS_OUTPUT main(SKY_VS_INPUT input)
 	output.PosL = input.PosL;
 
 	// Transform to world space
-	float posW = mul(float4(input.PosL, 1.0f), world);
+	float3 posW = mul(float4(input.PosL, 1.0f), world);
 
 	// Always centre sky about camera
 	posW.xyz += eyePosW;
@@ -30,5 +30,7 @@ SKY_VS_OUTPUT main(SKY_VS_INPUT input)
 	matrix viewProjection = mul(view, proj);
 
 	// Set z = w so that z/w = 1 (i.e, skydome always on far plane).
-	output PosH = mul(posW, viewProjection).xyww;
+	output.PosH = mul(posW, viewProjection).xyww;
+
+	return output;
 }

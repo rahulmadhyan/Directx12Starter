@@ -8,5 +8,5 @@ struct SKY_VS_OUTPUT
 
 float4 main(SKY_VS_OUTPUT pixelInput) : SV_Target
 {
-	return cube.Sample(sampleLinear, pixelInput.PosL);
+	return cubeMap.Sample(sampleLinear, pixelInput.PosL);
 }
