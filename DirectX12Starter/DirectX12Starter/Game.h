@@ -65,6 +65,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> particleInputLayout;
 
 	// list of all the entities
 	std::vector<std::unique_ptr<Entity>> allEntities;

@@ -535,11 +535,22 @@ void Game::BuildShadersAndInputLayout()
 	Shaders["VS"] = d3dUtil::CompileShader(L"Resources/Shaders/VertexShader.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["PS"] = d3dUtil::CompileShader(L"Resources/Shaders/PixelShader.hlsl", nullptr, "main", "ps_5_1");
 
+	Shaders["ParticleVS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticleVS.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["ParticlePS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticlePS.hlsl", nullptr, "main", "ps_5_1");
+
 	inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+
+	particleInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -638,6 +649,21 @@ void Game::BuildPSOs()
 	opaquePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC particlePSODescription;
+	ZeroMemory(&particlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	particlePSODescription.InputLayout = { particleInputLayout.data(), (UINT)particleInputLayout.size() };
+	opaquePSODescription.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["ParticleVS"]->GetBufferPointer()),
+		Shaders["ParticleVS"]->GetBufferSize()
+	};
+	opaquePSODescription.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["ParticlePS"]->GetBufferPointer()),
+		Shaders["ParticlePS"]->GetBufferSize()
+	};
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["particle"])));
 }
 
 void Game::BuildFrameResources()
