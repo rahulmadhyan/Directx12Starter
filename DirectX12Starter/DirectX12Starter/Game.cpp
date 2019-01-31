@@ -645,7 +645,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)allEntities.size(), Materials.size()));
+			1, (UINT)allEntities.size(), Materials.size(), 100));
 	}
 }
 

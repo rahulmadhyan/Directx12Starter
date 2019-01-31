@@ -1,6 +1,8 @@
 #pragma once
 #include <d3d12.h>
 #include <DirectXMath.h>
+#include "d3dUtil.h"
+#include "FrameResource.h"
 
 using namespace DirectX;
 
@@ -13,18 +15,12 @@ struct Particle
 	float Age;
 };
 
-struct ParticleVertex
-{
-	DirectX::XMFLOAT3 Position;
-	DirectX::XMFLOAT2 UV;
-	DirectX::XMFLOAT4 Color;
-	float Size;
-};
-
 class Emitter
 {
 public:
 	Emitter(
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* commandLis
 		int maxParticles,
 		int particlePerSecond,
 		float lifetime,
@@ -43,8 +39,8 @@ public:
 	void UpdateSingleParticle(float deltaTime, int index);
 	void SpawnParticle();
 
-	void CopyParticlesToGPU();
-	void CopyOneParticle(int index);
+	void CopyParticlesToGPU(FrameResource* currentFrameResource);
+	void CopyOneParticle(int index, FrameResource* currentFrameResource);
 	void Draw();
 
 private:
@@ -63,11 +59,15 @@ private:
 	float startSize;
 	float endSize;
 
+	ID3D12Device* device;
+	ID3D12GraphicsCommandList* commandList;
+
 	Particle* particles;
 	int maxParticles;
 	int firstDeadIndex;
 	int firstAliveIndex;
 
 	ParticleVertex* localParticleVertices;
+	MeshGeometry* emitterGeo;
 };
 

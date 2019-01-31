@@ -1,6 +1,8 @@
 #include "Emitter.h"
 
 Emitter::Emitter(
+	ID3D12Device* device,
+	ID3D12GraphicsCommandList* commandList,
 	int maxParticles,
 	int particlePerSecond,
 	float lifetime,
@@ -12,6 +14,8 @@ Emitter::Emitter(
 	DirectX::XMFLOAT3 emitterPosition,
 	DirectX::XMFLOAT3 emitterAcceleration)
 {
+	this->device = device,
+	this->commandList = commandList,
 	this->maxParticles = maxParticles;
 	this->lifetime = lifetime;
 	this->startColor = startColor;
@@ -40,9 +44,7 @@ Emitter::Emitter(
 		localParticleVertices[i + 3].UV = DirectX::XMFLOAT2(0, 1);
 	}
 
-	//create dynamic vertex buffer
-
-	unsigned int* indices = new unsigned int[maxParticles * 6];
+	uint16_t* indices = new uint16_t[maxParticles * 6];
 	int indexCount = 0;
 	for (int i = 0; i < maxParticles * 4; i += 4)
 	{
@@ -54,7 +56,28 @@ Emitter::Emitter(
 		indices[indexCount++] = i + 3;
 	}
 
-	//create index buffer
+	UINT emitterVBSize = maxParticles * 4 * sizeof(ParticleVertex);
+	UINT emitterIBSize = maxParticles * 6 * sizeof(uint16_t);
+
+	emitterGeo->VertexBufferCPU = nullptr;
+	emitterGeo->VertexBufferColorGPU = nullptr;
+
+	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
+	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), indices, emitterIBSize);
+
+	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, commandList, indices, emitterIBSize, emitterGeo->IndexBufferUploader);
+
+	emitterGeo->VertexByteStride = sizeof(ParticleVertex);
+	emitterGeo->VertexBufferByteSize = emitterVBSize;
+	emitterGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	emitterGeo->IndexBufferByteSize = emitterIBSize;
+
+	SubmeshGeometry subMesh;
+	subMesh.IndexCount = sizeof(indices) / sizeof(uint16_t);
+	subMesh.StartIndexLocation = 0;
+	subMesh.BaseVertexLocation = 0;
+	
+	emitterGeo->DrawArgs["emitter"] = subMesh;
 
 	delete[] indices;
 }
@@ -144,29 +167,30 @@ void Emitter::SpawnParticle()
 	livingParticleCount++;
 }
 
-void Emitter::CopyParticlesToGPU()
+void Emitter::CopyParticlesToGPU(FrameResource* currentFrameResource)
 {
 	// Check cyclic buffer status
 	if (firstAliveIndex < firstDeadIndex)
 	{
 		for (int i = firstAliveIndex; i < firstDeadIndex; i++)
-			CopyOneParticle(i);
+			CopyOneParticle(i, currentFrameResource);
 	}
 	else
 	{
 		// Update first half (from firstAlive to max particles)
 		for (int i = firstAliveIndex; i < maxParticles; i++)
-			CopyOneParticle(i);
+			CopyOneParticle(i, currentFrameResource);
 
 		// Update second half (from 0 to first dead)
 		for (int i = 0; i < firstDeadIndex; i++)
-			CopyOneParticle(i);
+			CopyOneParticle(i, currentFrameResource);
 	}
 
 	//copy buffer to GPU
+	emitterGeo->VertexBufferGPU = currentFrameResource->emitterVB->Resource();
 }
 
-void Emitter::CopyOneParticle(int index)
+void Emitter::CopyOneParticle(int index, FrameResource* currentFrameResource)
 {
 	int i = index * 4;
 
@@ -184,6 +208,11 @@ void Emitter::CopyOneParticle(int index)
 	localParticleVertices[i + 1].Color = particles[index].Color;
 	localParticleVertices[i + 2].Color = particles[index].Color;
 	localParticleVertices[i + 3].Color = particles[index].Color;
+
+	currentFrameResource->emitterVB->CopyData(index + 0, localParticleVertices[i + 0]);
+	currentFrameResource->emitterVB->CopyData(index + 1, localParticleVertices[i + 1]);
+	currentFrameResource->emitterVB->CopyData(index + 2, localParticleVertices[i + 2]);
+	currentFrameResource->emitterVB->CopyData(index + 3, localParticleVertices[i + 3]);
 }
 
 void Emitter::Draw()
