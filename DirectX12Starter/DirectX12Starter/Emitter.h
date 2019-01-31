@@ -20,7 +20,7 @@ class Emitter
 public:
 	Emitter(
 		ID3D12Device* device,
-		ID3D12GraphicsCommandList* commandLis
+		ID3D12GraphicsCommandList* commandList,
 		int maxParticles,
 		int particlePerSecond,
 		float lifetime,
