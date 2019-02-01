@@ -79,7 +79,7 @@ uint16_t* Emitter::GetParticleIndices()
 
 }
 
-void Emitter::Update(float deltaTime, FrameResource* currentFrameResource)
+void Emitter::Update(float deltaTime)
 {
 	if (firstAliveIndex < firstDeadIndex)
 	{
@@ -103,7 +103,7 @@ void Emitter::Update(float deltaTime, FrameResource* currentFrameResource)
 		timeSinceEmit -= secondsPerParticle;
 	}
 
-	CopyParticlesToGPU(currentFrameResource);
+	CopyParticlesToGPU();
 }
 
 void Emitter::UpdateSingleParticle(float deltaTime, int index)
@@ -160,30 +160,30 @@ void Emitter::SpawnParticle()
 	livingParticleCount++;
 }
 
-void Emitter::CopyParticlesToGPU(FrameResource* currentFrameResource)
+void Emitter::CopyParticlesToGPU()
 {
 	// Check cyclic buffer status
 	if (firstAliveIndex < firstDeadIndex)
 	{
 		for (int i = firstAliveIndex; i < firstDeadIndex; i++)
-			CopyOneParticle(i, currentFrameResource);
+			CopyOneParticle(i);
 	}
 	else
 	{
 		// Update first half (from firstAlive to max particles)
 		for (int i = firstAliveIndex; i < maxParticles; i++)
-			CopyOneParticle(i, currentFrameResource);
+			CopyOneParticle(i);
 
 		// Update second half (from 0 to first dead)
 		for (int i = 0; i < firstDeadIndex; i++)
-			CopyOneParticle(i, currentFrameResource);
+			CopyOneParticle(i);
 	}
 
 	//copy buffer to GPU
 	//emitterEntity->Geo->VertexBufferGPU = currentFrameResource->emitterVB->Resource();
 }
 
-void Emitter::CopyOneParticle(int index, FrameResource* currentFrameResource)
+void Emitter::CopyOneParticle(int index)
 {
 	int i = index * 4;
 
@@ -201,11 +201,6 @@ void Emitter::CopyOneParticle(int index, FrameResource* currentFrameResource)
 	localParticleVertices[i + 1].Color = particles[index].Color;
 	localParticleVertices[i + 2].Color = particles[index].Color;
 	localParticleVertices[i + 3].Color = particles[index].Color;
-
-	currentFrameResource->emitterVB->CopyData(index + 0, localParticleVertices[i + 0]);
-	currentFrameResource->emitterVB->CopyData(index + 1, localParticleVertices[i + 1]);
-	currentFrameResource->emitterVB->CopyData(index + 2, localParticleVertices[i + 2]);
-	currentFrameResource->emitterVB->CopyData(index + 3, localParticleVertices[i + 3]);
 }
 
 

@@ -75,6 +75,7 @@ private:
 	std::vector<Entity*> playerEntities;
 	std::vector<Entity*> sceneEntities;
 	std::vector<Entity*> enemyEntities;
+	std::vector<Entity*> emitterEntities;
 
 	PassConstants MainPassCB;
 

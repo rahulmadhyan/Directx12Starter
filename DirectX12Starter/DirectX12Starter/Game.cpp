@@ -181,7 +181,18 @@ void Game::Update(const Timer &timer)
 
 	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
-	emitter->Update(timer.GetDeltaTime(), currentFrameResource);
+	emitter->Update(timer.GetDeltaTime());
+
+	//update emitter vertex buffer
+	auto currentEmitterVB = currentFrameResource->emitterVB.get();
+	ParticleVertex* currentVertices = emitter->GetParticleVertices();
+	for (int i = 0; i < emitter->GetMaxParticles() * 4; ++i)
+	{
+		ParticleVertex p = currentVertices[i];
+		currentEmitterVB->CopyData(i, p);
+	}
+
+	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -854,6 +865,7 @@ void Game::BuildEntities()
 	emitterEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	emitterEntity->meshData = emitterEntity->Geo->DrawArgs["emitter"];
 	allEntities.push_back(std::move(emitterEntity));
+	emitterEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 }

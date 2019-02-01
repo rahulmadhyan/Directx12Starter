@@ -39,13 +39,13 @@ public:
 	ParticleVertex* GetParticleVertices();
 	uint16_t* GetParticleIndices();
 
-	void Update(float deltaTime, FrameResource* currentFrameResource));
+	void Update(float deltaTime);
 
 	void UpdateSingleParticle(float deltaTime, int index);
 	void SpawnParticle();
 
-	void CopyParticlesToGPU(FrameResource* currentFrameResource);
-	void CopyOneParticle(int index, FrameResource* currentFrameResource);
+	void CopyParticlesToGPU();
+	void CopyOneParticle(int index);
 
 private:
 	int particlesPerSecond;
