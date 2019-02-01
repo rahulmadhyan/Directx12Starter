@@ -116,6 +116,21 @@ bool Game::Initialize()
 
 	enemies = new Enemies(systemData);
 
+	emitter = new Emitter(
+		Device.Get(),
+		CommandList.Get(),
+		1000,							// Max particles
+		100,							// Particles per second
+		5,								// Particle lifetime
+		0.1f,							// Start size
+		5.0f,							// End size
+		XMFLOAT4(1, 0.1f, 0.1f, 0.2f),	// Start color
+		XMFLOAT4(1, 0.6f, 0.1f, 0),		// End color
+		XMFLOAT3(-2, 2, 0),				// Start velocity
+		XMFLOAT3(2, 0, 0),				// Start position
+		XMFLOAT3(0, -1, 0)				// Start acceleration
+	);
+
 	BuildTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
@@ -166,6 +181,7 @@ void Game::Update(const Timer &timer)
 
 	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
+	emitter->Update(timer.GetDeltaTime(), currentFrameResource);
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -333,6 +349,16 @@ void Game::BuildTextures()
 		demo2Texture->UploadHeap));
 
 	Textures[demo2Texture->Name] = std::move(demo2Texture);
+
+	auto emitterTexture = std::make_unique<Texture>();
+	emitterTexture->Name = "emitter";
+	emitterTexture->Filename = L"Resources/Textures/FireParticle.jpg";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), emitterTexture->Filename.c_str(),
+		emitterTexture->Resource,
+		emitterTexture->UploadHeap));
+
+	Textures[emitterTexture->Name] = std::move(emitterTexture);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -619,6 +645,35 @@ void Game::BuildGeometry()
 	geo->DrawArgs["cylinder"] = cylinderSubMesh;
 
 	Geometries[geo->Name] = std::move(geo);
+
+	const UINT emitterVBSize = emitter->GetMaxParticles() * 4 * sizeof(ParticleVertex);
+	const UINT emitterIBSize = emitter->GetMaxParticles() * 6 * sizeof(uint16_t);
+
+	auto emitterGeo = std::make_unique<MeshGeometry>();
+	emitterGeo->Name = "emitterGeo";
+
+	emitterGeo->VertexBufferCPU = nullptr;
+	emitterGeo->VertexBufferColorGPU = nullptr;
+
+	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
+	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), emitter->GetParticleIndices, emitterIBSize);
+	
+	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
+		CommandList.Get(), emitter->GetParticleIndices(), emitterIBSize, emitterGeo->IndexBufferUploader);
+
+	emitterGeo->VertexByteStride = sizeof(ParticleVertex);
+	emitterGeo->VertexBufferByteSize = emitterVBSize;
+	emitterGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	emitterGeo->IndexBufferByteSize = emitterIBSize;
+
+	SubmeshGeometry subMesh;
+	subMesh.IndexCount = sizeof(indices) / sizeof(uint16_t);
+	subMesh.StartIndexLocation = 0;
+	subMesh.BaseVertexLocation = 0;
+
+	emitterGeo->DrawArgs["emitter"] = subMesh;
+
+	Geometries[emitterGeo->Name] = std::move(emitterGeo);
 }
 
 void Game::BuildPSOs()
@@ -696,6 +751,16 @@ void Game::BuildMaterials()
 	demo2Material->Roughness = 0.2f;
 
 	Materials[demo2Material->Name] = std::move(demo2Material);
+
+	auto emitterMaterial = std::make_unique<Material>();
+	emitterMaterial->Name = "emitter";
+	emitterMaterial->MatCBIndex = 1;
+	emitterMaterial->DiffuseSrvHeapIndex = 2;
+	emitterMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	emitterMaterial->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	emitterMaterial->Roughness = 0.2f;
+
+	Materials[emitterMaterial->Name] = std::move(emitterMaterial);
 }
 
 void Game::BuildEntities()
@@ -775,6 +840,20 @@ void Game::BuildEntities()
 	enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity2));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto emitterEntity = std::make_unique<Entity>();
+	emitterEntity->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
+	emitterEntity->ObjCBIndex = currentObjCBIndex;
+	emitterEntity->Geo = Geometries["emitterGeo"].get();
+	emitterEntity->Mat = Materials["emitter"].get();
+	emitterEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	emitterEntity->meshData = emitterEntity->Geo->DrawArgs["emitter"];
+	allEntities.push_back(std::move(emitterEntity));
 	currentEntityIndex++;
 	currentObjCBIndex++;
 }

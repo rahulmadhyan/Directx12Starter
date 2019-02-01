@@ -44,7 +44,7 @@ Emitter::Emitter(
 		localParticleVertices[i + 3].UV = DirectX::XMFLOAT2(0, 1);
 	}
 
-	uint16_t* indices = new uint16_t[maxParticles * 6];
+	indices = new uint16_t[maxParticles * 6];
 	int indexCount = 0;
 	for (int i = 0; i < maxParticles * 4; i += 4)
 	{
@@ -55,40 +55,31 @@ Emitter::Emitter(
 		indices[indexCount++] = i + 2;
 		indices[indexCount++] = i + 3;
 	}
-
-	UINT emitterVBSize = maxParticles * 4 * sizeof(ParticleVertex);
-	UINT emitterIBSize = maxParticles * 6 * sizeof(uint16_t);
-
-	emitterGeo->VertexBufferCPU = nullptr;
-	emitterGeo->VertexBufferColorGPU = nullptr;
-
-	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
-	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), indices, emitterIBSize);
-
-	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, commandList, indices, emitterIBSize, emitterGeo->IndexBufferUploader);
-
-	emitterGeo->VertexByteStride = sizeof(ParticleVertex);
-	emitterGeo->VertexBufferByteSize = emitterVBSize;
-	emitterGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	emitterGeo->IndexBufferByteSize = emitterIBSize;
-
-	SubmeshGeometry subMesh;
-	subMesh.IndexCount = sizeof(indices) / sizeof(uint16_t);
-	subMesh.StartIndexLocation = 0;
-	subMesh.BaseVertexLocation = 0;
-	
-	emitterGeo->DrawArgs["emitter"] = subMesh;
-
-	delete[] indices;
 }
 
 Emitter::~Emitter()
 {
 	delete[] particles;
 	delete[] localParticleVertices;
+	delete[] indices;
 }
 
-void Emitter::Update(float deltaTime)
+int Emitter::GetMaxParticles()
+{
+	return maxParticles;
+}
+
+ParticleVertex* Emitter::GetParticleVertices()
+{
+
+}
+
+uint16_t* Emitter::GetParticleIndices()
+{
+
+}
+
+void Emitter::Update(float deltaTime, FrameResource* currentFrameResource)
 {
 	if (firstAliveIndex < firstDeadIndex)
 	{
@@ -111,6 +102,8 @@ void Emitter::Update(float deltaTime)
 		SpawnParticle();
 		timeSinceEmit -= secondsPerParticle;
 	}
+
+	CopyParticlesToGPU(currentFrameResource);
 }
 
 void Emitter::UpdateSingleParticle(float deltaTime, int index)
@@ -187,7 +180,7 @@ void Emitter::CopyParticlesToGPU(FrameResource* currentFrameResource)
 	}
 
 	//copy buffer to GPU
-	emitterGeo->VertexBufferGPU = currentFrameResource->emitterVB->Resource();
+	//emitterEntity->Geo->VertexBufferGPU = currentFrameResource->emitterVB->Resource();
 }
 
 void Emitter::CopyOneParticle(int index, FrameResource* currentFrameResource)
@@ -213,11 +206,6 @@ void Emitter::CopyOneParticle(int index, FrameResource* currentFrameResource)
 	currentFrameResource->emitterVB->CopyData(index + 1, localParticleVertices[i + 1]);
 	currentFrameResource->emitterVB->CopyData(index + 2, localParticleVertices[i + 2]);
 	currentFrameResource->emitterVB->CopyData(index + 3, localParticleVertices[i + 3]);
-}
-
-void Emitter::Draw()
-{
-
 }
 
 

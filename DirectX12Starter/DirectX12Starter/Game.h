@@ -7,9 +7,11 @@
 #include "GeometryGenerator.h"
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
+#include "WICTextureLoader.h"
 #include "Player.h"
 #include "Enemies.h"
 #include "Ray.h"
+#include "Emitter.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -88,10 +90,7 @@ private:
 
 	Enemies *enemies;
 
-	// Directional light angles
-	/*float mTheta = 1.5f * XM_PI;
-	float mPhi = XM_PIDIV2 - 0.1f;
-	float mRadius = 50.0f;*/
+	Emitter* emitter;
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;

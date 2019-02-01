@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 #include "d3dUtil.h"
 #include "FrameResource.h"
+#include "Entity.h"
 
 using namespace DirectX;
 
@@ -34,14 +35,17 @@ public:
 		);
 	~Emitter();
 
-	void Update(float deltaTime);
+	int GetMaxParticles();
+	ParticleVertex* GetParticleVertices();
+	uint16_t* GetParticleIndices();
+
+	void Update(float deltaTime, FrameResource* currentFrameResource));
 
 	void UpdateSingleParticle(float deltaTime, int index);
 	void SpawnParticle();
 
 	void CopyParticlesToGPU(FrameResource* currentFrameResource);
 	void CopyOneParticle(int index, FrameResource* currentFrameResource);
-	void Draw();
 
 private:
 	int particlesPerSecond;
@@ -68,6 +72,6 @@ private:
 	int firstAliveIndex;
 
 	ParticleVertex* localParticleVertices;
-	MeshGeometry* emitterGeo;
+	uint16_t* indices;
 };
 
