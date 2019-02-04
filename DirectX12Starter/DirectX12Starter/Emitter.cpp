@@ -97,7 +97,7 @@ void Emitter::Update(float deltaTime)
 
 	timeSinceEmit += deltaTime;
 
-	while (timeSinceEmit < secondsPerParticle)
+	while (timeSinceEmit > secondsPerParticle)
 	{
 		SpawnParticle();
 		timeSinceEmit -= secondsPerParticle;
