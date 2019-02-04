@@ -4,7 +4,7 @@ Emitter::Emitter(
 	ID3D12Device* device,
 	ID3D12GraphicsCommandList* commandList,
 	int maxParticles,
-	int particlePerSecond,
+	int particlesPerSecond,
 	float lifetime,
 	float startSize,
 	float endSize,

@@ -119,16 +119,16 @@ bool Game::Initialize()
 	emitter = new Emitter(
 		Device.Get(),
 		CommandList.Get(),
-		1000,							// Max particles
-		100,							// Particles per second
-		5,								// Particle lifetime
-		0.1f,							// Start size
-		5.0f,							// End size
-		XMFLOAT4(1, 0.1f, 0.1f, 0.2f),	// Start color
-		XMFLOAT4(1, 0.6f, 0.1f, 0),		// End color
-		XMFLOAT3(-2, 2, 0),				// Start velocity
-		XMFLOAT3(2, 0, 0),				// Start position
-		XMFLOAT3(0, -1, 0)				// Start acceleration
+		100,
+		100,
+		5,
+		0.1f,
+		5.0f,
+		XMFLOAT4(1.0f, 0.1, 0.1f, 0.2f),
+		XMFLOAT4(1.0f, 0.6f, 0.1f, 0),
+		XMFLOAT3(-2.0f, 2.0f, 0.0f),
+		XMFLOAT3(2.0f, 0.0f, 0.0f),
+		XMFLOAT3(0.0f, -1.0f, 0.0f)
 	);
 
 	BuildTextures();
@@ -181,18 +181,18 @@ void Game::Update(const Timer &timer)
 
 	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
-	//emitter->Update(timer.GetDeltaTime());
+	emitter->Update(timer.GetDeltaTime());
 
 	//update emitter vertex buffer
-	/*auto currentEmitterVB = currentFrameResource->emitterVB.get();
+	auto currentEmitterVB = currentFrameResource->emitterVB.get();
 	ParticleVertex* currentVertices = emitter->GetParticleVertices();
-	for (int i = 0; i < emitter->GetMaxParticles() * 4; ++i)
+	for (int i = 0; i < emitter->GetMaxParticles(); ++i)
 	{
 		ParticleVertex p = currentVertices[i];
 		currentEmitterVB->CopyData(i, p);
 	}
 
-	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();*/
+	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -866,7 +866,7 @@ void Game::BuildEntities()
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
-	/*auto emitterEntity = std::make_unique<Entity>();
+	auto emitterEntity = std::make_unique<Entity>();
 	emitterEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
@@ -879,7 +879,7 @@ void Game::BuildEntities()
 	allEntities.push_back(std::move(emitterEntity));
 	emitterEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
-	currentObjCBIndex++;*/
+	currentObjCBIndex++;
 }
 
 void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
