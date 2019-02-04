@@ -186,13 +186,13 @@ void Game::Update(const Timer &timer)
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();
 	ParticleVertex* currentVertices = emitter->GetParticleVertices();
-	for (int i = 0; i < emitter->GetMaxParticles(); ++i)
+	for (int i = 0; i < emitter->GetMaxParticles() * 4; ++i)
 	{
 		ParticleVertex p = currentVertices[i];
 		currentEmitterVB->CopyData(i, p);
 	}
 
-	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();
+	emitterEntities[0]->Geo->VertexBufferGPU = currentEmitterVB->Resource();
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -236,6 +236,10 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
+	
+	CommandList->SetPipelineState(PSOs["emitter"].Get());
+
+	DrawEntities(CommandList.Get(), emitterEntities);
 
 #ifdef _DEBUG
 	DebugDraw(CommandList.Get(), playerEntities);
@@ -664,7 +668,7 @@ void Game::BuildGeometry()
 	emitterGeo->Name = "emitterGeo";
 
 	emitterGeo->VertexBufferCPU = nullptr;
-	emitterGeo->VertexBufferColorGPU = nullptr;
+	emitterGeo->VertexBufferGPU = nullptr;
 
 	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
 	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), emitter->GetParticleIndices(), emitterIBSize);
@@ -678,7 +682,7 @@ void Game::BuildGeometry()
 	emitterGeo->IndexBufferByteSize = emitterIBSize;
 
 	SubmeshGeometry subMesh;
-	subMesh.IndexCount = sizeof(indices) / sizeof(uint16_t);
+	subMesh.IndexCount = emitter->GetMaxParticles() * 6;
 	subMesh.StartIndexLocation = 0;
 	subMesh.BaseVertexLocation = 0;
 
@@ -741,7 +745,7 @@ void Game::BuildPSOs()
 	particlePSODescription.SampleDesc.Count = xMsaaState ? 4 : 1;
 	particlePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	particlePSODescription.DSVFormat = DepthStencilFormat;
-	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["particle"])));
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["emitter"])));
 }
 
 void Game::BuildFrameResources()
@@ -749,7 +753,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)allEntities.size(), Materials.size(), 100));
+			1, (UINT)allEntities.size(), Materials.size(), 400));
 	}
 }
 
