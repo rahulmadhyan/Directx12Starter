@@ -71,12 +71,12 @@ int Emitter::GetMaxParticles()
 
 ParticleVertex* Emitter::GetParticleVertices()
 {
-
+	return localParticleVertices;
 }
 
 uint16_t* Emitter::GetParticleIndices()
 {
-
+	return indices;
 }
 
 void Emitter::Update(float deltaTime)
@@ -178,9 +178,6 @@ void Emitter::CopyParticlesToGPU()
 		for (int i = 0; i < firstDeadIndex; i++)
 			CopyOneParticle(i);
 	}
-
-	//copy buffer to GPU
-	//emitterEntity->Geo->VertexBufferGPU = currentFrameResource->emitterVB->Resource();
 }
 
 void Emitter::CopyOneParticle(int index)

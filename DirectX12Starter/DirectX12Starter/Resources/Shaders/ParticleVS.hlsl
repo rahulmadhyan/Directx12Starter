@@ -1,3 +1,5 @@
+#include "LightingUtil.hlsl"
+
 cbuffer cbPerObject : register(b0)
 {
 	float4x4 world;
@@ -26,15 +28,16 @@ cbuffer cbMaterial : register(b2)
 struct VS_INPUT
 {
 	float3 Position		: POSITION;
-	float3 Normal		: NORMAL;
 	float2 UV			: TEXCOORD;
-};
+	float4 Color		: COLOR;
+	float Size			: SIZE;
+};						 
 
 struct VS_OUTPUT
 {
 	float4 Position		: SV_POSITION;
-	float3 Normal		: NORMAL;
 	float2 UV			: TEXCOORD;
+	float4 Color		: COLOR;
 };
 
 VS_OUTPUT main(VS_INPUT input)
@@ -42,16 +45,16 @@ VS_OUTPUT main(VS_INPUT input)
 	VS_OUTPUT output;
 
 	matrix viewProjection = mul(view, proj);
-	output.position = mul(float4(input.position, 1.0f), viewProjection);
+	output.Position = mul(float4(input.Position, 1.0f), viewProjection);
 
 	//uv to offset position
-	float2 offset = input.uv * 2 - 1;
-	offset *= input.size;
+	float2 offset = input.UV * 2 - 1;
+	offset *= input.Size;
 	offset.y *= -1;
-	output.position.xy += offset;
+	output.Position.xy += offset;
 
-	output.uv = input.uv;
-	output.color = input.color;
+	output.UV = input.UV;
+	output.Color = input.Color;
 
 	return output;
 }

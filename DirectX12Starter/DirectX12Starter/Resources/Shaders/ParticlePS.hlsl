@@ -1,3 +1,5 @@
+#include "LightingUtil.hlsl"
+
 cbuffer cbPass : register(b1)
 {
 	float4x4 view;
@@ -17,11 +19,19 @@ cbuffer cbMaterial : register(b2)
 	float4x4 materialTransform;
 };
 
+struct VS_INPUT
+{
+	float3 Position		: POSITION;
+	float2 UV			: TEXCOORD;
+	float4 Color		: COLOR;
+	float Size			: SIZE;
+};
+
 struct VS_OUTPUT
 {
 	float4 Position		: SV_POSITION;
-	float3 Normal		: NORMAL;
 	float2 UV			: TEXCOORD;
+	float4 Color		: COLOR;
 };
 
 Texture2D    particleMap : register(t0);
@@ -29,5 +39,5 @@ SamplerState sampleLinear  : register(s0);
 
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
-	return particleMap.Sample(trilinear, input.uv) * input.color * input.color.a;
+	return particleMap.Sample(sampleLinear, input.UV) * input.Color * input.Color.a;
 }

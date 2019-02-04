@@ -181,10 +181,10 @@ void Game::Update(const Timer &timer)
 
 	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
-	emitter->Update(timer.GetDeltaTime());
+	//emitter->Update(timer.GetDeltaTime());
 
 	//update emitter vertex buffer
-	auto currentEmitterVB = currentFrameResource->emitterVB.get();
+	/*auto currentEmitterVB = currentFrameResource->emitterVB.get();
 	ParticleVertex* currentVertices = emitter->GetParticleVertices();
 	for (int i = 0; i < emitter->GetMaxParticles() * 4; ++i)
 	{
@@ -192,7 +192,7 @@ void Game::Update(const Timer &timer)
 		currentEmitterVB->CopyData(i, p);
 	}
 
-	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();
+	emitterEntities[0]->Geo->VertexBufferColorGPU = currentEmitterVB->Resource();*/
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -342,7 +342,7 @@ void Game::UpadteMaterialCBs(const Timer& timet)
 void Game::BuildTextures()
 {
 	auto demo1Texture = std::make_unique<Texture>();
-	demo1Texture->Name = "demo1";
+	demo1Texture->Name = "1";
 	demo1Texture->Filename = L"Resources/Textures/Demo1.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo1Texture->Filename.c_str(),
@@ -352,7 +352,7 @@ void Game::BuildTextures()
 	Textures[demo1Texture->Name] = std::move(demo1Texture);
 
 	auto demo2Texture = std::make_unique<Texture>();
-	demo2Texture->Name = "demo2";
+	demo2Texture->Name = "2";
 	demo2Texture->Filename = L"Resources/Textures/Demo2.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo2Texture->Filename.c_str(),
@@ -362,8 +362,8 @@ void Game::BuildTextures()
 	Textures[demo2Texture->Name] = std::move(demo2Texture);
 
 	auto emitterTexture = std::make_unique<Texture>();
-	emitterTexture->Name = "emitter";
-	emitterTexture->Filename = L"Resources/Textures/FireParticle.jpg";
+	emitterTexture->Name = "3";
+	emitterTexture->Filename = L"Resources/Textures/FireParticle.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), emitterTexture->Filename.c_str(),
 		emitterTexture->Resource,
@@ -667,7 +667,7 @@ void Game::BuildGeometry()
 	emitterGeo->VertexBufferColorGPU = nullptr;
 
 	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
-	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), emitter->GetParticleIndices, emitterIBSize);
+	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), emitter->GetParticleIndices(), emitterIBSize);
 	
 	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
 		CommandList.Get(), emitter->GetParticleIndices(), emitterIBSize, emitterGeo->IndexBufferUploader);
@@ -719,16 +719,28 @@ void Game::BuildPSOs()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC particlePSODescription;
 	ZeroMemory(&particlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	particlePSODescription.InputLayout = { particleInputLayout.data(), (UINT)particleInputLayout.size() };
-	opaquePSODescription.VS =
+	particlePSODescription.pRootSignature = rootSignature.Get();
+	particlePSODescription.VS =
 	{
 		reinterpret_cast<BYTE*>(Shaders["ParticleVS"]->GetBufferPointer()),
 		Shaders["ParticleVS"]->GetBufferSize()
 	};
-	opaquePSODescription.PS =
+	particlePSODescription.PS =
 	{
 		reinterpret_cast<BYTE*>(Shaders["ParticlePS"]->GetBufferPointer()),
 		Shaders["ParticlePS"]->GetBufferSize()
 	};
+	particlePSODescription.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	particlePSODescription.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	particlePSODescription.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	particlePSODescription.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	particlePSODescription.SampleMask = UINT_MAX;
+	particlePSODescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	particlePSODescription.NumRenderTargets = 1;
+	particlePSODescription.RTVFormats[0] = BackBufferFormat;
+	particlePSODescription.SampleDesc.Count = xMsaaState ? 4 : 1;
+	particlePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
+	particlePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["particle"])));
 }
 
@@ -765,7 +777,7 @@ void Game::BuildMaterials()
 
 	auto emitterMaterial = std::make_unique<Material>();
 	emitterMaterial->Name = "emitter";
-	emitterMaterial->MatCBIndex = 1;
+	emitterMaterial->MatCBIndex = 2;
 	emitterMaterial->DiffuseSrvHeapIndex = 2;
 	emitterMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	emitterMaterial->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
@@ -854,7 +866,7 @@ void Game::BuildEntities()
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
-	auto emitterEntity = std::make_unique<Entity>();
+	/*auto emitterEntity = std::make_unique<Entity>();
 	emitterEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
@@ -867,7 +879,7 @@ void Game::BuildEntities()
 	allEntities.push_back(std::move(emitterEntity));
 	emitterEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
-	currentObjCBIndex++;
+	currentObjCBIndex++;*/
 }
 
 void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
