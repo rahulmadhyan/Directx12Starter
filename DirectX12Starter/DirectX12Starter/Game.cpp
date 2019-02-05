@@ -233,9 +233,9 @@ void Game::Draw(const Timer &timer)
 	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
 	CommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-	//DrawEntities(CommandList.Get(), playerEntities);
-	//DrawEntities(CommandList.Get(), sceneEntities);
-	//DrawEntities(CommandList.Get(), enemyEntities);
+	DrawEntities(CommandList.Get(), playerEntities);
+	DrawEntities(CommandList.Get(), sceneEntities);
+	DrawEntities(CommandList.Get(), enemyEntities);
 	
 	CommandList->SetPipelineState(PSOs["emitter"].Get());
 
