@@ -150,6 +150,7 @@ void Emitter::SpawnParticle()
 	particles[firstDeadIndex].Size = startSize;
 	particles[firstDeadIndex].Color = startColor;
 	particles[firstDeadIndex].Position = emitterPosition;
+	particles[firstDeadIndex].StartVelocity = startVelocity;
 	particles[firstDeadIndex].StartVelocity.x += ((float)rand() / RAND_MAX) * 0.4f - 0.2f;
 	particles[firstDeadIndex].StartVelocity.y += ((float)rand() / RAND_MAX) * 0.4f - 0.2f;
 	particles[firstDeadIndex].StartVelocity.z += ((float)rand() / RAND_MAX) * 0.4f - 0.2f;

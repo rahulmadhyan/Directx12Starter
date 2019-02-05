@@ -233,9 +233,9 @@ void Game::Draw(const Timer &timer)
 	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
 	CommandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
-	DrawEntities(CommandList.Get(), playerEntities);
-	DrawEntities(CommandList.Get(), sceneEntities);
-	DrawEntities(CommandList.Get(), enemyEntities);
+	//DrawEntities(CommandList.Get(), playerEntities);
+	//DrawEntities(CommandList.Get(), sceneEntities);
+	//DrawEntities(CommandList.Get(), enemyEntities);
 	
 	CommandList->SetPipelineState(PSOs["emitter"].Get());
 
@@ -720,6 +720,7 @@ void Game::BuildPSOs()
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
 
+	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC particlePSODescription;
 	ZeroMemory(&particlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	particlePSODescription.InputLayout = { particleInputLayout.data(), (UINT)particleInputLayout.size() };
@@ -734,10 +735,29 @@ void Game::BuildPSOs()
 		reinterpret_cast<BYTE*>(Shaders["ParticlePS"]->GetBufferPointer()),
 		Shaders["ParticlePS"]->GetBufferSize()
 	};
+
+	CD3DX12_DEPTH_STENCIL_DESC particleDSS(D3D12_DEFAULT);
+	particleDSS.DepthEnable = true;
+	particleDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	particleDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+	CD3DX12_BLEND_DESC particleBlendState(D3D12_DEFAULT);
+	particleBlendState.AlphaToCoverageEnable = false;
+	particleBlendState.IndependentBlendEnable = false;
+	particleBlendState.RenderTarget[0].BlendEnable = true;
+	particleBlendState.RenderTarget[0].BlendOp = 
+	particleBlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	particleBlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	particleBlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	
 	particlePSODescription.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	particlePSODescription.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-	particlePSODescription.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	particlePSODescription.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	particlePSODescription.BlendState = particleBlendState;
+	particlePSODescription.DepthStencilState = particleDSS;
 	particlePSODescription.SampleMask = UINT_MAX;
 	particlePSODescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	particlePSODescription.NumRenderTargets = 1;
@@ -753,7 +773,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)allEntities.size(), Materials.size(), 400));
+			1, (UINT)allEntities.size(), Materials.size(), emitter->GetMaxParticles() * 4));
 	}
 }
 
