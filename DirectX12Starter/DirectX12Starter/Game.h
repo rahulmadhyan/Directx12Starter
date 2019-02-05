@@ -91,8 +91,6 @@ private:
 
 	Enemies *enemies;
 
-	Emitter* emitter;
-
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
 

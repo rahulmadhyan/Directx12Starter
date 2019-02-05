@@ -2,7 +2,7 @@
 
 extern const int gNumberFrameResources;
 
-Player::Player(SystemData *systemData) : systemData(systemData)
+Player::Player(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, SystemData *systemData) : systemData(systemData)
 {
 	xTranslation = 0;
 	zTranslation = 0;
@@ -14,16 +14,37 @@ Player::Player(SystemData *systemData) : systemData(systemData)
 	shootingRay->origin = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	shootingRay->direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 	shootingRay->distance = 50.0f;
+
+	emitter = new Emitter(
+		device,
+		commandList,
+		100,
+		100,
+		5,
+		0.1f,
+		5.0f,
+		XMFLOAT4(1.0f, 0.1, 0.1f, 0.2f),
+		XMFLOAT4(1.0f, 0.6f, 0.1f, 0),
+		XMFLOAT3(-2.0f, 2.0f, 0.0f),
+		XMFLOAT3(2.0f, 2.0f, 0.0f),
+		XMFLOAT3(0.0f, -1.0f, 0.0f)
+	);
 }
 
 Player::~Player()
 {
 	delete shootingRay;
+	delete emitter;
 }
 
 const Ray* Player::GetRay() const
 {
 	return shootingRay;
+}
+
+Emitter* Player::GetEmitter() const
+{
+	return emitter;
 }
 
 void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity*> enemyEntities)
@@ -59,6 +80,8 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 		playerEntity->NumFramesDirty = gNumberFrameResources;
 	}
 
+	emitter->Update(timer.GetDeltaTime());
+
 	// ray-casting
 	{
 		if (InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER))
@@ -87,13 +110,18 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 				if (enemy->meshData.Bounds.Intersects(rayOrigin, rayDirection, rayDistance))
 				{
 					out << "TRUE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
+					XMFLOAT3 enemyPosition = *systemData->GetWorldPosition(enemy->SystemWorldIndex);
+					emitter->SetEmitterPosition(enemyPosition.x, enemyPosition.y, enemyPosition.z);
 				}
 				else
 				{
 					out << "FALSE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
+					emitter->SetEmitterPosition(0.0f, 0.0f, 0.0f);
 				}
 				OutputDebugStringW(out.str().c_str());
 			}
 		}
 	}
+
+	
 }

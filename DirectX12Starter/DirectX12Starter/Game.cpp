@@ -92,8 +92,6 @@ Game::~Game()
 	delete player;
 
 	delete enemies;
-
-	delete emitter;
 }
 
 bool Game::Initialize()
@@ -114,24 +112,9 @@ bool Game::Initialize()
 
 	inputManager = InputManager::getInstance();
 
-	player = new Player(systemData);
+	player = new Player(Device.Get(), CommandList.Get(), systemData);
 
 	enemies = new Enemies(systemData);
-
-	emitter = new Emitter(
-		Device.Get(),
-		CommandList.Get(),
-		100,
-		100,
-		5,
-		0.1f,
-		5.0f,
-		XMFLOAT4(1.0f, 0.1, 0.1f, 0.2f),
-		XMFLOAT4(1.0f, 0.6f, 0.1f, 0),
-		XMFLOAT3(-2.0f, 2.0f, 0.0f),
-		XMFLOAT3(2.0f, 2.0f, 0.0f),
-		XMFLOAT3(0.0f, -1.0f, 0.0f)
-	);
 
 	BuildTextures();
 	BuildRootSignature();
@@ -183,12 +166,11 @@ void Game::Update(const Timer &timer)
 
 	player->Update(timer, playerEntities[0], enemyEntities);
 	enemies->Update(timer, playerEntities[0], enemyEntities);
-	emitter->Update(timer.GetDeltaTime());
-
+	
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();
-	ParticleVertex* currentVertices = emitter->GetParticleVertices();
-	for (int i = 0; i < emitter->GetMaxParticles() * 4; ++i)
+	ParticleVertex* currentVertices = player->GetEmitter()->GetParticleVertices();
+	for (int i = 0; i < player->GetEmitter()->GetMaxParticles() * 4; ++i)
 	{
 		ParticleVertex p = currentVertices[i];
 		currentEmitterVB->CopyData(i, p);
@@ -663,8 +645,8 @@ void Game::BuildGeometry()
 
 	Geometries[geo->Name] = std::move(geo);
 
-	const UINT emitterVBSize = emitter->GetMaxParticles() * 4 * sizeof(ParticleVertex);
-	const UINT emitterIBSize = emitter->GetMaxParticles() * 6 * sizeof(uint16_t);
+	const UINT emitterVBSize = player->GetEmitter()->GetMaxParticles() * 4 * sizeof(ParticleVertex);
+	const UINT emitterIBSize = player->GetEmitter()->GetMaxParticles() * 6 * sizeof(uint16_t);
 
 	auto emitterGeo = std::make_unique<MeshGeometry>();
 	emitterGeo->Name = "emitterGeo";
@@ -673,10 +655,10 @@ void Game::BuildGeometry()
 	emitterGeo->VertexBufferGPU = nullptr;
 
 	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
-	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), emitter->GetParticleIndices(), emitterIBSize);
+	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), player->GetEmitter()->GetParticleIndices(), emitterIBSize);
 	
 	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
-		CommandList.Get(), emitter->GetParticleIndices(), emitterIBSize, emitterGeo->IndexBufferUploader);
+		CommandList.Get(), player->GetEmitter()->GetParticleIndices(), emitterIBSize, emitterGeo->IndexBufferUploader);
 
 	emitterGeo->VertexByteStride = sizeof(ParticleVertex);
 	emitterGeo->VertexBufferByteSize = emitterVBSize;
@@ -684,7 +666,7 @@ void Game::BuildGeometry()
 	emitterGeo->IndexBufferByteSize = emitterIBSize;
 
 	SubmeshGeometry subMesh;
-	subMesh.IndexCount = emitter->GetMaxParticles() * 6;
+	subMesh.IndexCount = player->GetEmitter()->GetMaxParticles() * 6;
 	subMesh.StartIndexLocation = 0;
 	subMesh.BaseVertexLocation = 0;
 
@@ -775,7 +757,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)allEntities.size(), Materials.size(), emitter->GetMaxParticles() * 4));
+			1, (UINT)allEntities.size(), Materials.size(), player->GetEmitter()->GetMaxParticles() * 4));
 	}
 }
 
