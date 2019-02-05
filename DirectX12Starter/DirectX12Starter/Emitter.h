@@ -39,13 +39,10 @@ public:
 	ParticleVertex* GetParticleVertices();
 	uint16_t* GetParticleIndices();
 
+	DirectX::XMFLOAT3 GetEmitterPosition();
+	void SetEmitterPosition(float x, float y, float z);
+
 	void Update(float deltaTime);
-
-	void UpdateSingleParticle(float deltaTime, int index);
-	void SpawnParticle();
-
-	void CopyParticlesToGPU();
-	void CopyOneParticle(int index);
 
 private:
 	int particlesPerSecond;
@@ -73,5 +70,11 @@ private:
 
 	ParticleVertex* localParticleVertices;
 	uint16_t* indices;
+
+	void UpdateSingleParticle(float deltaTime, int index);
+	void SpawnParticle();
+
+	void CopyParticlesToGPU();
+	void CopyOneParticle(int index);
 };
 

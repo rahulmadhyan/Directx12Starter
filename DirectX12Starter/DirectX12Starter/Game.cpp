@@ -129,7 +129,7 @@ bool Game::Initialize()
 		XMFLOAT4(1.0f, 0.1, 0.1f, 0.2f),
 		XMFLOAT4(1.0f, 0.6f, 0.1f, 0),
 		XMFLOAT3(-2.0f, 2.0f, 0.0f),
-		XMFLOAT3(2.0f, 0.0f, 0.0f),
+		XMFLOAT3(2.0f, 2.0f, 0.0f),
 		XMFLOAT3(0.0f, -1.0f, 0.0f)
 	);
 
@@ -219,7 +219,7 @@ void Game::Draw(const Timer &timer)
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// clear the back buffer and depth buffer
-	CommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	CommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::Black, 0, nullptr);
 	CommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// specify the buffers we are going to render to

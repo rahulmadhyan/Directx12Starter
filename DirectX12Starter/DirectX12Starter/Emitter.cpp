@@ -79,6 +79,16 @@ uint16_t* Emitter::GetParticleIndices()
 	return indices;
 }
 
+DirectX::XMFLOAT3 Emitter::GetEmitterPosition()
+{
+	return emitterPosition;
+}
+
+void Emitter::SetEmitterPosition(float x, float y, float z)
+{
+	emitterPosition = DirectX::XMFLOAT3(x, y, z);
+}
+
 void Emitter::Update(float deltaTime)
 {
 	if (firstAliveIndex < firstDeadIndex)
