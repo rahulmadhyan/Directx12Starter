@@ -92,6 +92,8 @@ Game::~Game()
 	delete player;
 
 	delete enemies;
+
+	delete emitter;
 }
 
 bool Game::Initialize()
