@@ -20,12 +20,20 @@ struct PassConstants
 	Light lights[MAX_LIGHTS];
 };
 
+struct ParticleVertex
+{
+	DirectX::XMFLOAT3 Position;
+	DirectX::XMFLOAT2 UV;
+	DirectX::XMFLOAT4 Color;
+	float Size;
+};
+
 // stores the resources needed for the CPU to build the command lists for a frame 
 struct FrameResource
 {
 public:
 
-	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount);
+	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT particleCount);
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
 	~FrameResource();
@@ -38,6 +46,9 @@ public:
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
+
+	//emitter dynamic vertex buffer
+	std::unique_ptr<UploadBuffer<ParticleVertex>> emitterVB = nullptr;
 
 	// fence value to mark commands up to this fence point 
 	// this lets us check if these frame resources are still in use by the GPU.

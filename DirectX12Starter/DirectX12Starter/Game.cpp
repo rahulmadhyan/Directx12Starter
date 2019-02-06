@@ -112,7 +112,7 @@ bool Game::Initialize()
 
 	inputManager = InputManager::getInstance();
 
-	player = new Player(systemData);
+	player = new Player(Device.Get(), CommandList.Get(), systemData);
 
 	enemies = new Enemies(systemData);
 
@@ -165,7 +165,18 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	enemies->Update(timer, playerEntities[0], enemyEntities);
+	//enemies->Update(timer, playerEntities[0], enemyEntities);
+	
+	//update emitter vertex buffer
+	auto currentEmitterVB = currentFrameResource->emitterVB.get();
+	ParticleVertex* currentVertices = player->GetEmitter()->GetParticleVertices();
+	for (int i = 0; i < player->GetEmitter()->GetMaxParticles() * 4; ++i)
+	{
+		ParticleVertex p = currentVertices[i];
+		currentEmitterVB->CopyData(i, p);
+	}
+
+	emitterEntities[0]->Geo->VertexBufferGPU = currentEmitterVB->Resource();
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -190,7 +201,7 @@ void Game::Draw(const Timer &timer)
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// clear the back buffer and depth buffer
-	CommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	CommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::Black, 0, nullptr);
 	CommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// specify the buffers we are going to render to
@@ -209,6 +220,10 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
+	
+	CommandList->SetPipelineState(PSOs["emitter"].Get());
+
+	DrawEntities(CommandList.Get(), emitterEntities);
 
 #ifdef _DEBUG
 	DebugDraw(CommandList.Get(), playerEntities);
@@ -315,7 +330,7 @@ void Game::UpadteMaterialCBs(const Timer& timet)
 void Game::BuildTextures()
 {
 	auto demo1Texture = std::make_unique<Texture>();
-	demo1Texture->Name = "demo1";
+	demo1Texture->Name = "1";
 	demo1Texture->Filename = L"Resources/Textures/Demo1.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo1Texture->Filename.c_str(),
@@ -325,7 +340,7 @@ void Game::BuildTextures()
 	Textures[demo1Texture->Name] = std::move(demo1Texture);
 
 	auto demo2Texture = std::make_unique<Texture>();
-	demo2Texture->Name = "demo2";
+	demo2Texture->Name = "2";
 	demo2Texture->Filename = L"Resources/Textures/Demo2.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo2Texture->Filename.c_str(),
@@ -333,6 +348,16 @@ void Game::BuildTextures()
 		demo2Texture->UploadHeap));
 
 	Textures[demo2Texture->Name] = std::move(demo2Texture);
+
+	auto emitterTexture = std::make_unique<Texture>();
+	emitterTexture->Name = "3";
+	emitterTexture->Filename = L"Resources/Textures/FireParticle.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), emitterTexture->Filename.c_str(),
+		emitterTexture->Resource,
+		emitterTexture->UploadHeap));
+
+	Textures[emitterTexture->Name] = std::move(emitterTexture);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -535,11 +560,22 @@ void Game::BuildShadersAndInputLayout()
 	Shaders["VS"] = d3dUtil::CompileShader(L"Resources/Shaders/VertexShader.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["PS"] = d3dUtil::CompileShader(L"Resources/Shaders/PixelShader.hlsl", nullptr, "main", "ps_5_1");
 
+	Shaders["ParticleVS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticleVS.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["ParticlePS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticlePS.hlsl", nullptr, "main", "ps_5_1");
+
 	inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+
+	particleInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -608,6 +644,35 @@ void Game::BuildGeometry()
 	geo->DrawArgs["cylinder"] = cylinderSubMesh;
 
 	Geometries[geo->Name] = std::move(geo);
+
+	const UINT emitterVBSize = player->GetEmitter()->GetMaxParticles() * 4 * sizeof(ParticleVertex);
+	const UINT emitterIBSize = player->GetEmitter()->GetMaxParticles() * 6 * sizeof(uint16_t);
+
+	auto emitterGeo = std::make_unique<MeshGeometry>();
+	emitterGeo->Name = "emitterGeo";
+
+	emitterGeo->VertexBufferCPU = nullptr;
+	emitterGeo->VertexBufferGPU = nullptr;
+
+	ThrowIfFailed(D3DCreateBlob(emitterIBSize, &emitterGeo->IndexBufferCPU));
+	CopyMemory(emitterGeo->IndexBufferCPU->GetBufferPointer(), player->GetEmitter()->GetParticleIndices(), emitterIBSize);
+	
+	emitterGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(Device.Get(),
+		CommandList.Get(), player->GetEmitter()->GetParticleIndices(), emitterIBSize, emitterGeo->IndexBufferUploader);
+
+	emitterGeo->VertexByteStride = sizeof(ParticleVertex);
+	emitterGeo->VertexBufferByteSize = emitterVBSize;
+	emitterGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	emitterGeo->IndexBufferByteSize = emitterIBSize;
+
+	SubmeshGeometry subMesh;
+	subMesh.IndexCount = player->GetEmitter()->GetMaxParticles() * 6;
+	subMesh.StartIndexLocation = 0;
+	subMesh.BaseVertexLocation = 0;
+
+	emitterGeo->DrawArgs["emitter"] = subMesh;
+
+	Geometries[emitterGeo->Name] = std::move(emitterGeo);
 }
 
 void Game::BuildPSOs()
@@ -638,6 +703,53 @@ void Game::BuildPSOs()
 	opaquePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
+
+	
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC particlePSODescription;
+	ZeroMemory(&particlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	particlePSODescription.InputLayout = { particleInputLayout.data(), (UINT)particleInputLayout.size() };
+	particlePSODescription.pRootSignature = rootSignature.Get();
+	particlePSODescription.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["ParticleVS"]->GetBufferPointer()),
+		Shaders["ParticleVS"]->GetBufferSize()
+	};
+	particlePSODescription.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["ParticlePS"]->GetBufferPointer()),
+		Shaders["ParticlePS"]->GetBufferSize()
+	};
+
+	CD3DX12_DEPTH_STENCIL_DESC particleDSS(D3D12_DEFAULT);
+	particleDSS.DepthEnable = true;
+	particleDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	particleDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
+	CD3DX12_BLEND_DESC particleBlendState(D3D12_DEFAULT);
+	particleBlendState.AlphaToCoverageEnable = false;
+	particleBlendState.IndependentBlendEnable = false;
+	particleBlendState.RenderTarget[0].BlendEnable = true;
+	particleBlendState.RenderTarget[0].BlendOp = 
+	particleBlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	particleBlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	particleBlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
+	particleBlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	
+	particlePSODescription.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	particlePSODescription.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	particlePSODescription.BlendState = particleBlendState;
+	particlePSODescription.DepthStencilState = particleDSS;
+	particlePSODescription.SampleMask = UINT_MAX;
+	particlePSODescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	particlePSODescription.NumRenderTargets = 1;
+	particlePSODescription.RTVFormats[0] = BackBufferFormat;
+	particlePSODescription.SampleDesc.Count = xMsaaState ? 4 : 1;
+	particlePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
+	particlePSODescription.DSVFormat = DepthStencilFormat;
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["emitter"])));
 }
 
 void Game::BuildFrameResources()
@@ -645,7 +757,7 @@ void Game::BuildFrameResources()
 	for (int i = 0; i < gNumberFrameResources; ++i)
 	{
 		FrameResources.push_back(std::make_unique<FrameResource>(Device.Get(),
-			1, (UINT)allEntities.size(), Materials.size()));
+			1, (UINT)allEntities.size(), Materials.size(), player->GetEmitter()->GetMaxParticles() * 4));
 	}
 }
 
@@ -670,6 +782,16 @@ void Game::BuildMaterials()
 	demo2Material->Roughness = 0.2f;
 
 	Materials[demo2Material->Name] = std::move(demo2Material);
+
+	auto emitterMaterial = std::make_unique<Material>();
+	emitterMaterial->Name = "emitter";
+	emitterMaterial->MatCBIndex = 2;
+	emitterMaterial->DiffuseSrvHeapIndex = 2;
+	emitterMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	emitterMaterial->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	emitterMaterial->Roughness = 0.2f;
+
+	Materials[emitterMaterial->Name] = std::move(emitterMaterial);
 }
 
 void Game::BuildEntities()
@@ -749,6 +871,21 @@ void Game::BuildEntities()
 	enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["cylinder"];
 	allEntities.push_back(std::move(enemyEntity2));
 	enemyEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto emitterEntity = std::make_unique<Entity>();
+	emitterEntity->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
+	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
+	emitterEntity->ObjCBIndex = currentObjCBIndex;
+	emitterEntity->Geo = Geometries["emitterGeo"].get();
+	emitterEntity->Mat = Materials["emitter"].get();
+	emitterEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	emitterEntity->meshData = emitterEntity->Geo->DrawArgs["emitter"];
+	allEntities.push_back(std::move(emitterEntity));
+	emitterEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 }

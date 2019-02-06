@@ -7,9 +7,11 @@
 #include "GeometryGenerator.h"
 #include "SystemData.h"
 #include "DDSTextureLoader.h"
+#include "WICTextureLoader.h"
 #include "Player.h"
 #include "Enemies.h"
 #include "Ray.h"
+#include "Emitter.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -65,6 +67,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> particleInputLayout;
 
 	// list of all the entities
 	std::vector<std::unique_ptr<Entity>> allEntities;
@@ -72,6 +75,7 @@ private:
 	std::vector<Entity*> playerEntities;
 	std::vector<Entity*> sceneEntities;
 	std::vector<Entity*> enemyEntities;
+	std::vector<Entity*> emitterEntities;
 
 	PassConstants MainPassCB;
 
@@ -86,11 +90,6 @@ private:
 	Player *player;
 
 	Enemies *enemies;
-
-	// Directional light angles
-	/*float mTheta = 1.5f * XM_PI;
-	float mPhi = XM_PIDIV2 - 0.1f;
-	float mRadius = 50.0f;*/
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
