@@ -89,6 +89,14 @@ void Emitter::SetEmitterPosition(float x, float y, float z)
 	emitterPosition = DirectX::XMFLOAT3(x, y, z);
 }
 
+void Emitter::SpawnParticles()
+{
+	for (size_t i = 0; i < maxParticles; i++)
+	{
+		SpawnParticle();
+	}
+}
+
 void Emitter::Update(float deltaTime)
 {
 	if (firstAliveIndex < firstDeadIndex)
@@ -107,11 +115,11 @@ void Emitter::Update(float deltaTime)
 
 	timeSinceEmit += deltaTime;
 
-	while (timeSinceEmit > secondsPerParticle)
+	/*while (timeSinceEmit > secondsPerParticle)
 	{
 		SpawnParticle();
 		timeSinceEmit -= secondsPerParticle;
-	}
+	}*/
 
 	CopyParticlesToGPU();
 }

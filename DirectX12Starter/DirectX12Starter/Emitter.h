@@ -42,6 +42,7 @@ public:
 	DirectX::XMFLOAT3 GetEmitterPosition();
 	void SetEmitterPosition(float x, float y, float z);
 
+	void SpawnParticles();
 	void Update(float deltaTime);
 
 private:

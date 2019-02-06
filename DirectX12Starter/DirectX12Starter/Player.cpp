@@ -18,16 +18,16 @@ Player::Player(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, Sys
 	emitter = new Emitter(
 		device,
 		commandList,
-		100,
-		100,
-		5,
+		500,
+		500,
+		1.0f,
 		0.1f,
 		5.0f,
 		XMFLOAT4(1.0f, 0.1, 0.1f, 0.2f),
 		XMFLOAT4(1.0f, 0.6f, 0.1f, 0),
-		XMFLOAT3(-2.0f, 2.0f, 0.0f),
+		XMFLOAT3(0.0f, 2.0f, 0.0f),
 		XMFLOAT3(2.0f, 2.0f, 0.0f),
-		XMFLOAT3(0.0f, -1.0f, 0.0f)
+		XMFLOAT3(0.0f, -2.0f, 0.0f)
 	);
 }
 
@@ -112,11 +112,11 @@ void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity
 					out << "TRUE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
 					XMFLOAT3 enemyPosition = *systemData->GetWorldPosition(enemy->SystemWorldIndex);
 					emitter->SetEmitterPosition(enemyPosition.x, enemyPosition.y, enemyPosition.z);
+					emitter->SpawnParticles();
 				}
 				else
 				{
 					out << "FALSE " << std::to_wstring(enemy->SystemWorldIndex) << "\n";
-					emitter->SetEmitterPosition(0.0f, 0.0f, 0.0f);
 				}
 				OutputDebugStringW(out.str().c_str());
 			}
