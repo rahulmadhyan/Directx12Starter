@@ -165,7 +165,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	enemies->Update(timer, playerEntities[0], enemyEntities);
+	//enemies->Update(timer, playerEntities[0], enemyEntities);
 	
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();
@@ -221,11 +221,11 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
 	
-	CommandList->SetPipelineState(PSOs["emitter"].Get());
-	DrawEntities(CommandList.Get(), emitterEntities);
-
 	CommandList->SetPipelineState(PSOs["sky"].Get());
 	DrawEntities(CommandList.Get(), skyEntities);
+
+	CommandList->SetPipelineState(PSOs["emitter"].Get());
+	DrawEntities(CommandList.Get(), emitterEntities);
 
 #ifdef _DEBUG
 	DebugDraw(CommandList.Get(), playerEntities);
