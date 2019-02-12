@@ -221,8 +221,10 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
 	
-	CommandList->SetPipelineState(PSOs["emitter"].Get());
+	CommandList->SetPipelineState(PSOs["sky"].Get());
+	DrawEntities(CommandList.Get(), skyEntities);
 
+	CommandList->SetPipelineState(PSOs["emitter"].Get());
 	DrawEntities(CommandList.Get(), emitterEntities);
 
 #ifdef _DEBUG
@@ -358,6 +360,16 @@ void Game::BuildTextures()
 		emitterTexture->UploadHeap));
 
 	Textures[emitterTexture->Name] = std::move(emitterTexture);
+
+	auto cubeMapTexture = std::make_unique<Texture>();
+	cubeMapTexture->Name = "4";
+	cubeMapTexture->Filename = L"Resources/Textures/grasscube1024.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), cubeMapTexture->Filename.c_str(),
+		cubeMapTexture->Resource,
+		cubeMapTexture->UploadHeap));
+
+	CubeMapTextures[cubeMapTexture->Name] = std::move(cubeMapTexture);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -394,7 +406,7 @@ void Game::BuildDescriptorHeaps()
 		IID_PPV_ARGS(&matCBVHeap)));
 
 	// build SRV heap for textures
-	UINT textureCount = (UINT)Textures.size();
+	UINT textureCount = (UINT)Textures.size() + (UINT)CubeMapTextures.size();
 
 	D3D12_DESCRIPTOR_HEAP_DESC SRVHeapDesc;
 	SRVHeapDesc.NumDescriptors = textureCount;
@@ -503,6 +515,26 @@ void Game::BuildConstantBufferViews()
 
 		SRVHeapIndex++;
 	}
+
+	for (auto it = CubeMapTextures.begin(); it != CubeMapTextures.end(); ++it)
+	{
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(SRVHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(SRVHeapIndex, CBVSRVUAVDescriptorSize);
+
+		auto texture = it->second->Resource;
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+		SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SRVDesc.Format = texture->GetDesc().Format;
+		SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		SRVDesc.Texture2D.MostDetailedMip = 0;
+		SRVDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
+		SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+		Device->CreateShaderResourceView(texture.Get(), &SRVDesc, handle);
+
+		SRVHeapIndex++;
+	}
 }
 
 void Game::BuildRootSignature()
@@ -562,6 +594,9 @@ void Game::BuildShadersAndInputLayout()
 
 	Shaders["ParticleVS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticleVS.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["ParticlePS"] = d3dUtil::CompileShader(L"Resources/Shaders/ParticlePS.hlsl", nullptr, "main", "ps_5_1");
+
+	Shaders["SkyVS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyVS.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["SkyPS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyPS.hlsl", nullptr, "main", "ps_5_1");
 
 	inputLayout =
 	{
@@ -704,7 +739,6 @@ void Game::BuildPSOs()
 	opaquePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&opaquePSODescription, IID_PPV_ARGS(&PSOs["opaque"])));
 
-	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC particlePSODescription;
 	ZeroMemory(&particlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	particlePSODescription.InputLayout = { particleInputLayout.data(), (UINT)particleInputLayout.size() };
@@ -750,6 +784,35 @@ void Game::BuildPSOs()
 	particlePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	particlePSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&particlePSODescription, IID_PPV_ARGS(&PSOs["emitter"])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPSODescription;
+	ZeroMemory(&skyPSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	skyPSODescription.InputLayout = { inputLayout.data(), (UINT)inputLayout.size() };
+	skyPSODescription.pRootSignature = rootSignature.Get();
+	skyPSODescription.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["SkyVS"]->GetBufferPointer()),
+		Shaders["SkyVS"]->GetBufferSize()
+	};
+	skyPSODescription.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["SkyPS"]->GetBufferPointer()),
+		Shaders["SkyPS"]->GetBufferSize()
+	};
+	skyPSODescription.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	skyPSODescription.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	skyPSODescription.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	skyPSODescription.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	skyPSODescription.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	skyPSODescription.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	skyPSODescription.SampleMask = UINT_MAX;
+	skyPSODescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	skyPSODescription.NumRenderTargets = 1;
+	skyPSODescription.RTVFormats[0] = BackBufferFormat;
+	skyPSODescription.SampleDesc.Count = xMsaaState ? 4 : 1;
+	skyPSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
+	skyPSODescription.DSVFormat = DepthStencilFormat;
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&skyPSODescription, IID_PPV_ARGS(&PSOs["sky"])));
 }
 
 void Game::BuildFrameResources()
@@ -788,10 +851,20 @@ void Game::BuildMaterials()
 	emitterMaterial->MatCBIndex = 2;
 	emitterMaterial->DiffuseSrvHeapIndex = 2;
 	emitterMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	emitterMaterial->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
-	emitterMaterial->Roughness = 0.2f;
+	emitterMaterial->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	emitterMaterial->Roughness = 1.0f;
 
 	Materials[emitterMaterial->Name] = std::move(emitterMaterial);
+
+	auto skyMaterial = std::make_unique<Material>();
+	skyMaterial->Name = "sky";
+	skyMaterial->MatCBIndex = 3;
+	skyMaterial->DiffuseSrvHeapIndex = 3;
+	skyMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	skyMaterial->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	skyMaterial->Roughness = 1.0f;
+
+	Materials[skyMaterial->Name] = std::move(skyMaterial);
 }
 
 void Game::BuildEntities()
@@ -886,6 +959,21 @@ void Game::BuildEntities()
 	emitterEntity->meshData = emitterEntity->Geo->DrawArgs["emitter"];
 	allEntities.push_back(std::move(emitterEntity));
 	emitterEntities.push_back(allEntities[currentEntityIndex].get());
+	currentEntityIndex++;
+	currentObjCBIndex++;
+
+	auto skyEntity = std::make_unique<Entity>();
+	skyEntity->SystemWorldIndex = currentEntityIndex;
+	systemData->SetScale(currentEntityIndex, 5000.0f, 5000.0f, 5000.0f);
+	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
+	systemData->SetWorldMatrix(currentEntityIndex);
+	skyEntity->ObjCBIndex = currentObjCBIndex;
+	skyEntity->Geo = Geometries["shapeGeo"].get();
+	skyEntity->Mat = Materials["sky"].get();
+	skyEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skyEntity->meshData = skyEntity->Geo->DrawArgs["box1"];
+	allEntities.push_back(std::move(skyEntity));
+	skyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
 	currentObjCBIndex++;
 }

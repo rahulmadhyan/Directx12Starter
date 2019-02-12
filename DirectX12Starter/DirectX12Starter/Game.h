@@ -65,6 +65,7 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> PSOs;
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> CubeMapTextures;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> particleInputLayout;
@@ -76,6 +77,7 @@ private:
 	std::vector<Entity*> sceneEntities;
 	std::vector<Entity*> enemyEntities;
 	std::vector<Entity*> emitterEntities;
+	std::vector<Entity*> skyEntities;
 
 	PassConstants MainPassCB;
 
