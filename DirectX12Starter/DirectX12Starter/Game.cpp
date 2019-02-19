@@ -675,8 +675,8 @@ void Game::BuildGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["Player"] = playerSubMesh;
-	geo->DrawArgs["box1"] = box1SubMesh;
-	geo->DrawArgs["cylinder"] = cylinderSubMesh;
+	geo->DrawArgs["Box"] = box1SubMesh;
+	geo->DrawArgs["Cylinder"] = cylinderSubMesh;
 
 	Geometries[geo->Name] = std::move(geo);
 
@@ -888,64 +888,116 @@ void Game::BuildEntities()
 	currentEntityIndex++;
 	currentObjCBIndex++;
 
-	auto sceneEntity1 = std::make_unique<Entity>();
-	sceneEntity1->SystemWorldIndex = currentEntityIndex;
-	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
-	systemData->SetWorldMatrix(currentEntityIndex);
-	sceneEntity1->ObjCBIndex = currentObjCBIndex;
-	sceneEntity1->Geo = Geometries["shapeGeo"].get();
-	sceneEntity1->Mat = Materials["demo1"].get();
-	sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity1->meshData = sceneEntity1->Geo->DrawArgs["box1"];
-	allEntities.push_back(std::move(sceneEntity1));
-	sceneEntities.push_back(allEntities[currentEntityIndex].get());
-	currentEntityIndex++;
-	currentObjCBIndex++;
+	// scene entitites
+	{
+		auto sceneEntity1 = std::make_unique<Entity>();
+		sceneEntity1->SystemWorldIndex = currentEntityIndex;
+		systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
+		systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		sceneEntity1->ObjCBIndex = currentObjCBIndex;
+		sceneEntity1->Geo = Geometries["shapeGeo"].get();
+		sceneEntity1->Mat = Materials["demo1"].get();
+		sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sceneEntity1->meshData = sceneEntity1->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(sceneEntity1));
+		sceneEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
 
-	auto sceneEntity2 = std::make_unique<Entity>();
-	sceneEntity2->SystemWorldIndex = currentEntityIndex;
-	systemData->SetTranslation(currentEntityIndex, 20.0f, 0.0f, 0.0f);
-	systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
-	systemData->SetWorldMatrix(currentEntityIndex);
-	sceneEntity2->ObjCBIndex = currentObjCBIndex;
-	sceneEntity2->Geo = Geometries["shapeGeo"].get();
-	sceneEntity2->Mat = Materials["demo2"].get();
-	sceneEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	sceneEntity2->meshData = sceneEntity2->Geo->DrawArgs["box1"];
-	allEntities.push_back(std::move(sceneEntity2));
-	sceneEntities.push_back(allEntities[currentEntityIndex].get());
-	currentEntityIndex++;
-	currentObjCBIndex++;
+		auto sceneEntity2 = std::make_unique<Entity>();
+		sceneEntity2->SystemWorldIndex = currentEntityIndex;
+		systemData->SetTranslation(currentEntityIndex, 25.0f, 0.0f, 5.0f);
+		systemData->SetScale(currentEntityIndex, 30.0f, 0.25f, 5.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		sceneEntity2->ObjCBIndex = currentObjCBIndex;
+		sceneEntity2->Geo = Geometries["shapeGeo"].get();
+		sceneEntity2->Mat = Materials["demo2"].get();
+		sceneEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sceneEntity2->meshData = sceneEntity2->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(sceneEntity2));
+		sceneEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
 
-	auto enemyEntity1 = std::make_unique<Entity>();
-	enemyEntity1->SystemWorldIndex = currentEntityIndex;
-	systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
-	systemData->SetTranslation(currentEntityIndex, 18.0f, 2.0f, 8.0f);
-	systemData->SetWorldMatrix(currentEntityIndex);
-	enemyEntity1->ObjCBIndex = currentObjCBIndex;
-	enemyEntity1->Geo = Geometries["shapeGeo"].get();
-	enemyEntity1->Mat = Materials["demo1"].get();
-	enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["cylinder"];
-	allEntities.push_back(std::move(enemyEntity1));
-	enemyEntities.push_back(allEntities[currentEntityIndex].get());
-	currentEntityIndex++;
-	currentObjCBIndex++;
+		auto sceneEntity3 = std::make_unique<Entity>();
+		sceneEntity3->SystemWorldIndex = currentEntityIndex;
+		systemData->SetTranslation(currentEntityIndex, 60.0f, 0.0f, 15.0f);
+		systemData->SetScale(currentEntityIndex, 40.0f, 0.25f, 40.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		sceneEntity3->ObjCBIndex = currentObjCBIndex;
+		sceneEntity3->Geo = Geometries["shapeGeo"].get();
+		sceneEntity3->Mat = Materials["demo2"].get();
+		sceneEntity3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sceneEntity3->meshData = sceneEntity3->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(sceneEntity3));
+		sceneEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
 
-	auto enemyEntity2 = std::make_unique<Entity>();
-	enemyEntity2->SystemWorldIndex = currentEntityIndex;
-	systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
-	systemData->SetTranslation(currentEntityIndex, 22.0f, 2.0f, 4.0f);
-	systemData->SetWorldMatrix(currentEntityIndex);
-	enemyEntity2->ObjCBIndex = currentObjCBIndex;
-	enemyEntity2->Geo = Geometries["shapeGeo"].get();
-	enemyEntity2->Mat = Materials["demo1"].get();
-	enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["cylinder"];
-	allEntities.push_back(std::move(enemyEntity2));
-	enemyEntities.push_back(allEntities[currentEntityIndex].get());
-	currentEntityIndex++;
-	currentObjCBIndex++;
+		auto sceneEntity4 = std::make_unique<Entity>();
+		sceneEntity4->SystemWorldIndex = currentEntityIndex;
+		systemData->SetTranslation(currentEntityIndex, 90.0f, 0.0f, 25.0f);
+		systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 5.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		sceneEntity4->ObjCBIndex = currentObjCBIndex;
+		sceneEntity4->Geo = Geometries["shapeGeo"].get();
+		sceneEntity4->Mat = Materials["demo2"].get();
+		sceneEntity4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sceneEntity4->meshData = sceneEntity4->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(sceneEntity4));
+		sceneEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+
+		auto sceneEntity5 = std::make_unique<Entity>();
+		sceneEntity5->SystemWorldIndex = currentEntityIndex;
+		systemData->SetTranslation(currentEntityIndex, 110.0f, 0.0f, 20.0f);
+		systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		sceneEntity5->ObjCBIndex = currentObjCBIndex;
+		sceneEntity5->Geo = Geometries["shapeGeo"].get();
+		sceneEntity5->Mat = Materials["demo2"].get();
+		sceneEntity5->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		sceneEntity5->meshData = sceneEntity5->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(sceneEntity5));
+		sceneEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+	}
+
+	// enemy entities
+	{
+		auto enemyEntity1 = std::make_unique<Entity>();
+		enemyEntity1->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
+		systemData->SetTranslation(currentEntityIndex, 75.0f, 2.0f, 20.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		enemyEntity1->ObjCBIndex = currentObjCBIndex;
+		enemyEntity1->Geo = Geometries["shapeGeo"].get();
+		enemyEntity1->Mat = Materials["demo1"].get();
+		enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["Cylinder"];
+		allEntities.push_back(std::move(enemyEntity1));
+		enemyEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+
+		auto enemyEntity2 = std::make_unique<Entity>();
+		enemyEntity2->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
+		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 5.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		enemyEntity2->ObjCBIndex = currentObjCBIndex;
+		enemyEntity2->Geo = Geometries["shapeGeo"].get();
+		enemyEntity2->Mat = Materials["demo1"].get();
+		enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["Cylinder"];
+		allEntities.push_back(std::move(enemyEntity2));
+		enemyEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+	}
 
 	auto emitterEntity = std::make_unique<Entity>();
 	emitterEntity->SystemWorldIndex = currentEntityIndex;
@@ -971,7 +1023,7 @@ void Game::BuildEntities()
 	skyEntity->Geo = Geometries["shapeGeo"].get();
 	skyEntity->Mat = Materials["sky"].get();
 	skyEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	skyEntity->meshData = skyEntity->Geo->DrawArgs["box1"];
+	skyEntity->meshData = skyEntity->Geo->DrawArgs["Box"];
 	allEntities.push_back(std::move(skyEntity));
 	skyEntities.push_back(allEntities[currentEntityIndex].get());
 	currentEntityIndex++;
