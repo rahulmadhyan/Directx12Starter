@@ -363,7 +363,7 @@ void Game::BuildTextures()
 
 	auto cubeMapTexture = std::make_unique<Texture>();
 	cubeMapTexture->Name = "4";
-	cubeMapTexture->Filename = L"Resources/Textures/grasscube1024.dds";
+	cubeMapTexture->Filename = L"Resources/Textures/PurpleCube.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), cubeMapTexture->Filename.c_str(),
 		cubeMapTexture->Resource,
@@ -1058,6 +1058,8 @@ void Game::BuildEntities()
 		currentEntityIndex++;
 		currentObjCBIndex++;
 	}
+
+	// Add waypoint entities here
 
 	auto emitterEntity = std::make_unique<Entity>();
 	emitterEntity->SystemWorldIndex = currentEntityIndex;

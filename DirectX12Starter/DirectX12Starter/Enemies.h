@@ -13,6 +13,7 @@ public:
 
 private:
 	float moveSpeed = 5.0f;
+	float rotationSpeed = 5.0f;
 
 	SystemData* systemData;
 };

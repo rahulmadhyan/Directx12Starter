@@ -45,3 +45,8 @@ struct Entity
 
 	Entity() = default;
 };
+
+struct EnemyEntity : public Entity
+{
+	bool isRanged = false;
+};

@@ -13,6 +13,7 @@ Enemies::~Enemies()
 {
 }
 
+// have the update function include waypoints vector
 void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Entity*> enemyEntities)
 {
 	const float deltaTime = timer.GetDeltaTime();
@@ -37,5 +38,26 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Entit
 
 			e->NumFramesDirty = gNumberFrameResources;
 		}
+
+		//if (e->isRanged && distance < 20.0f)
+		//{
+		//	// look at
+
+		//	// fire
+		//}
+		//else
+		//{
+		//	if (distance < 20.0f && distance > 5.0f)
+		//	{
+		//		systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
+		//		systemData->SetWorldMatrix(e->SystemWorldIndex);
+
+		//		e->NumFramesDirty = gNumberFrameResources;
+		//	}
+		//	else
+		//	{
+		//		//patrol waypoints.
+		//	}
+		//}
 	}
 }

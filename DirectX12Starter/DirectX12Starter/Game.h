@@ -12,6 +12,7 @@
 #include "Enemies.h"
 #include "Ray.h"
 #include "Emitter.h"
+#include "Waypoints.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -76,6 +77,7 @@ private:
 	std::vector<Entity*> playerEntities;
 	std::vector<Entity*> sceneEntities;
 	std::vector<Entity*> enemyEntities;
+	//std::vector<Entity*> waypointEntities;
 	std::vector<Entity*> emitterEntities;
 	std::vector<Entity*> skyEntities;
 
@@ -92,6 +94,8 @@ private:
 	Player *player;
 
 	Enemies *enemies;
+
+	Waypoints *waypoints;
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
