@@ -616,7 +616,7 @@ void Game::BuildShadersAndInputLayout()
 
 void Game::BuildGeometry()
 {
-	systemData->LoadOBJFile("Resources/Models/Patrick.obj", Device, "Player");
+	systemData->LoadOBJFile("Resources/Models/Gun.obj", Device, "Player");
 	SubmeshGeometry playerSubMesh = systemData->GetSubSystem("Player");
 
 	systemData->LoadOBJFile("Resources/Models/cube.obj", Device, "box1");
