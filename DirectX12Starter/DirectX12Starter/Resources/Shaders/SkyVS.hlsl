@@ -4,7 +4,7 @@ cbuffer cbPerObject : register(b0)
 {
 	float4x4 world;
 	float4x4 textureTransform;
-};
+}
 
 cbuffer cbPass : register(b1)
 {
@@ -23,7 +23,20 @@ cbuffer cbMaterial : register(b2)
 	float3 fresnelR0;
 	float  roughness;
 	float4x4 materialTransform;
-};
+}
+
+cbuffer particleData : register(b3)
+{
+	float4 startColor;
+	float4 endColor;
+	float3 velocity;
+	float lifeTime;
+	float3 acceleration;
+	float pad;
+	int emitCount;
+	int maxParticles;
+	int gridSize;
+}
 
 struct VS_INPUT
 {

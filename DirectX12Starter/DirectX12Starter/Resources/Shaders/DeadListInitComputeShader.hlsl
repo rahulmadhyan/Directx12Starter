@@ -1,4 +1,5 @@
-#include "LightingUtil.hlsl"
+#include "GPUParticleInclude.hlsl"
+#include "SimplexNoise.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -38,10 +39,18 @@ cbuffer particleData : register(b3)
 	int gridSize;
 }
 
-Texture2D    particleMap : register(t0);
-SamplerState sampleLinear  : register(s0);
+RWStructuredBuffer<Particle> ParticlePool		: register(u0);
+AppendStructuredBuffer<uint> ADeadList			: register(u1);
+RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
+RWStructuredBuffer<uint> DrawArgs				: register(u3);
 
-float4 main(VS_OUTPUT input) : SV_TARGET
+[numthreads(32, 1, 1)]
+void main(uint id : SV_DispatchThreadID)
 {
-	return particleMap.Sample(sampleLinear, input.UV) * input.Color * input.Color.a;
+	// outside range?
+	if (id.x >= (uint)maxParticles) 
+		return;
+
+	// add the index to the dead list
+	ADeadList.Append(id.x);
 }

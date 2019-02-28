@@ -29,9 +29,9 @@ struct GPUParticleConstants
 	DirectX::XMFLOAT4 startColor;
 	DirectX::XMFLOAT4 endColor;
 	DirectX::XMFLOAT3 velocity;
-	float LifeTime = 0.0f;
+	float LifeTime;
 	DirectX::XMFLOAT3 acceleration;
-	float pad;
+	float pad = 0.0f;
 	int EmitCount = 0;
 	int MaxParticles = 0;
 	int GridSize = 0;

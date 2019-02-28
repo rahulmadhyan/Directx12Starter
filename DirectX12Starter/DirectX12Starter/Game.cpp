@@ -135,6 +135,42 @@ bool Game::Initialize()
 	// wait until initialization is complete
 	FlushCommandQueue();
 	
+	// gpu particle init
+	ThrowIfFailed(CommandListAllocator->Reset());
+
+	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["particleDeadList"].Get()));
+
+	CommandList->SetComputeRootSignature(rootSignature.Get());
+
+	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
+	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
+
+	UpdateMainPassCB(timer);
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
+	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
+	auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
+	CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
+
+	CommandList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
+	CommandList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
+	CommandList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
+	CommandList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
+
+	CommandList->Dispatch(gpuEmitter->GetMaxParticles(), 1, 1);
+
+	ThrowIfFailed(CommandList->Close());
+
+	// Add the command list to the queue for execution.
+	ID3D12CommandList* cmdsLists1[] = { CommandList.Get() };
+	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists1);
+
+	// Wait for the work to finish.
+	FlushCommandQueue();
+
  	return true;
 }
 
@@ -181,6 +217,7 @@ void Game::Update(const Timer &timer)
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
 	UpadteMaterialCBs(timer);
+	UpadteGPUParticleCBs(timer);
 }
 
 void Game::Draw(const Timer &timer)
@@ -329,6 +366,21 @@ void Game::UpadteMaterialCBs(const Timer& timet)
 	}
 }
 
+void Game::UpadteGPUParticleCBs(const Timer& timet)
+{
+	MainGPUParticleCB.startColor = gpuEmitter->GetStartColor();
+	MainGPUParticleCB.endColor = gpuEmitter->GetEndColor();
+	MainGPUParticleCB.velocity = gpuEmitter->GetVelocity();
+	MainGPUParticleCB.LifeTime = gpuEmitter->GetLifeTime();
+	MainGPUParticleCB.acceleration = gpuEmitter->GetAcceleration();
+	MainGPUParticleCB.EmitCount = gpuEmitter->GetEmitCount();
+	MainGPUParticleCB.MaxParticles = gpuEmitter->GetMaxParticles();
+	MainGPUParticleCB.GridSize = gpuEmitter->GetGridSize();
+
+	auto currentParticleCB = currentFrameResource->GPUParticleCB.get();
+	currentParticleCB->CopyData(0, MainGPUParticleCB);
+}
+
 void Game::BuildTextures()
 {
 	auto demo1Texture = std::make_unique<Texture>();
@@ -376,21 +428,25 @@ void Game::BuildTextures()
 	particlePoolResource->Name = "ParticlePool";
 	particlePoolResource->NumberOfElements = gpuEmitter->GetMaxParticles();
 	particlePoolResource->StructByStride = sizeof(GPUParticle);
+	GPUParticleResources[particlePoolResource->Name] = std::move(particlePoolResource);
 
 	auto deadListResource = std::make_unique<GPUParticleTexture>();
 	deadListResource->Name = "DeadList";
 	deadListResource->NumberOfElements = gpuEmitter->GetMaxParticles();
 	deadListResource->StructByStride = sizeof(unsigned int);
+	GPUParticleResources[deadListResource->Name] = std::move(deadListResource);
 
 	auto drawListResource = std::make_unique<GPUParticleTexture>();
 	drawListResource->Name = "DrawList";
 	drawListResource->NumberOfElements = gpuEmitter->GetMaxParticles();
 	drawListResource->StructByStride = sizeof(GPUParticleSort);
+	GPUParticleResources[drawListResource->Name] = std::move(drawListResource);
 
 	auto drawArgsResource = std::make_unique<GPUParticleTexture>();
 	drawArgsResource->Name = "DrawArgs";
 	drawArgsResource->NumberOfElements = 9;
 	drawArgsResource->StructByStride = sizeof(unsigned int);
+	GPUParticleResources[drawArgsResource->Name] = std::move(drawArgsResource);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -399,11 +455,13 @@ void Game::BuildDescriptorHeaps()
 	UINT objCount = (UINT)allEntities.size();
 
 	// Need a CBV descriptor for each object for each frame resource,
-	// +1 for the perPass CBV for each frame resource.
-	UINT objNumberDescriptors = (objCount + 1) * gNumberFrameResources;
+	// +1 for the perPass CBV for each frame resource
+	// +1 for GPUParticle CBV for each frame resource
+	UINT objNumberDescriptors = (objCount + 2) * gNumberFrameResources;
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
 	PassCbvOffset = objCount * gNumberFrameResources;
+	GPUParticleCBVOffset = PassCbvOffset + (1 + gNumberFrameResources);
 
 	D3D12_DESCRIPTOR_HEAP_DESC objCBVHeapDesc;
 	objCBVHeapDesc.NumDescriptors = objNumberDescriptors;
@@ -438,7 +496,7 @@ void Game::BuildDescriptorHeaps()
 
 	// heap for GPU particle resources
 	D3D12_DESCRIPTOR_HEAP_DESC GPUSRVUAVHeapDesc = {};
-	GPUSRVUAVHeapDesc.NumDescriptors = 6;
+	GPUSRVUAVHeapDesc.NumDescriptors = GPUParticleResources.count * 2;
 	GPUSRVUAVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	GPUSRVUAVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(Device->CreateDescriptorHeap(&GPUSRVUAVHeapDesc, IID_PPV_ARGS(&GPUParticleSRVUAVHeap)));
@@ -563,9 +621,56 @@ void Game::BuildConstantBufferViews()
 		SRVHeapIndex++;
 	}
 
+	UINT GPUResourceIndex = 0;
 	for (auto it = GPUParticleResources.begin(); it != GPUParticleResources.end(); ++it)
 	{
+		auto texture = it->second.get();
+		UINT64 resourceSize = texture->StructByStride * texture->NumberOfElements;
+		UINT64 counterBufferOffset = AlignForUavCounter(resourceSize);
+
+		ThrowIfFailed(Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(counterBufferOffset + sizeof(UINT), D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			nullptr,
+			IID_PPV_ARGS(&texture->Resource)));
+
+		ThrowIfFailed(Device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+			D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(counterBufferOffset + sizeof(UINT)),
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&texture->UploadHeap)));
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC resourceUAVDescription = {};
+		resourceUAVDescription.Format = DXGI_FORMAT_UNKNOWN;
+		resourceUAVDescription.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		resourceUAVDescription.Buffer.FirstElement = 0;
+		resourceUAVDescription.Buffer.NumElements = texture->NumberOfElements;
+		resourceUAVDescription.Buffer.StructureByteStride = texture->StructByStride;
+		resourceUAVDescription.Buffer.CounterOffsetInBytes = counterBufferOffset;
 		
+		texture->CPUUAVHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(GPUParticleSRVUAVHeap->GetCPUDescriptorHandleForHeapStart(), GPUResourceIndex, CBVSRVUAVDescriptorSize);
+		texture->GPUAVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(GPUParticleSRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), GPUResourceIndex, CBVSRVUAVDescriptorSize);
+		Device->CreateUnorderedAccessView(texture->Resource.Get(), texture->Resource.Get(), &resourceUAVDescription, texture->CPUUAVHandle);
+
+		GPUResourceIndex++;
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC resourceSRVDescription = {};
+		resourceSRVDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		resourceSRVDescription.Format = DXGI_FORMAT_UNKNOWN;
+		resourceSRVDescription.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		resourceSRVDescription.Buffer.FirstElement = 0;
+		resourceSRVDescription.Buffer.NumElements = texture->NumberOfElements;
+		resourceSRVDescription.Buffer.StructureByteStride = texture->StructByStride;
+
+		texture->CPUSRVHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(GPUParticleSRVUAVHeap->GetCPUDescriptorHandleForHeapStart(), GPUResourceIndex, CBVSRVUAVDescriptorSize);
+		texture->GPUSRVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(GPUParticleSRVUAVHeap->GetGPUDescriptorHandleForHeapStart(), GPUResourceIndex, CBVSRVUAVDescriptorSize);
+		Device->CreateShaderResourceView(texture->Resource.Get(), &resourceSRVDescription, texture->CPUSRVHandle);
+		
+		GPUResourceIndex++;
 	}
 }
 
@@ -580,22 +685,50 @@ void Game::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE cbvTable2;
 	cbvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 
+	CD3DX12_DESCRIPTOR_RANGE cbvTable3;
+	cbvTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
+
 	CD3DX12_DESCRIPTOR_RANGE srvTable0;
 	srvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	// gpu partilce
+	CD3DX12_DESCRIPTOR_RANGE srvTable1;
+	srvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE srvTable2;
+	srvTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable0;
+	uavTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable1;
+	uavTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable2;
+	uavTable2.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable3;
+	uavTable3.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 3);
+
 	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[11];
 
 	// Create root CBVs.
 	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable2);
 	slotRootParameter[3].InitAsDescriptorTable(1, &srvTable0, D3D12_SHADER_VISIBILITY_PIXEL);
-
+	slotRootParameter[4].InitAsDescriptorTable(1, &cbvTable3); // gpu particle constants
+	slotRootParameter[5].InitAsDescriptorTable(1, &srvTable1);
+	slotRootParameter[6].InitAsDescriptorTable(1, &srvTable2);
+	slotRootParameter[7].InitAsDescriptorTable(1, &uavTable0);
+	slotRootParameter[8].InitAsDescriptorTable(1, &uavTable1);
+	slotRootParameter[9].InitAsDescriptorTable(1, &uavTable2);
+	slotRootParameter[10].InitAsDescriptorTable(1, &uavTable3);
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, 
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(11, slotRootParameter, 
 		(UINT)staticSamplers.size(),
 		staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
@@ -617,6 +750,22 @@ void Game::BuildRootSignature()
 		serializedRootSig->GetBufferPointer(),
 		serializedRootSig->GetBufferSize(),
 		IID_PPV_ARGS(rootSignature.GetAddressOf())));
+
+	// gpu particle command signature
+	{
+		D3D12_INDIRECT_ARGUMENT_DESC Args[1];
+		Args[0].Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+
+		D3D12_COMMAND_SIGNATURE_DESC particleCommandSingatureDescription = {};
+		particleCommandSingatureDescription.ByteStride = 36;
+		particleCommandSingatureDescription.NumArgumentDescs = 1;
+		particleCommandSingatureDescription.pArgumentDescs = Args;
+
+		ThrowIfFailed(Device->CreateCommandSignature(
+			&particleCommandSingatureDescription,
+			NULL,
+			IID_PPV_ARGS(particleCommandSignature.GetAddressOf())));
+	}
 }
 
 void Game::BuildShadersAndInputLayout()
@@ -629,6 +778,14 @@ void Game::BuildShadersAndInputLayout()
 
 	Shaders["SkyVS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyVS.hlsl", nullptr, "main", "vs_5_1");
 	Shaders["SkyPS"] = d3dUtil::CompileShader(L"Resources/Shaders/SkyPS.hlsl", nullptr, "main", "ps_5_1");
+
+	Shaders["GPUParticleVS"] = d3dUtil::CompileShader(L"Resources/Shaders/GPUParticleVertexShader.hlsl", nullptr, "main", "vs_5_1");
+	Shaders["GPUParticleGS"] = d3dUtil::CompileShader(L"Resources/Shaders/GPUParticleGeometryShader.hlsl", nullptr, "main", "gs_5_1");
+	Shaders["GPUParticlePS"] = d3dUtil::CompileShader(L"Resources/Shaders/GPUParticlePixelShader.hlsl", nullptr, "main", "ps_5_1");
+	Shaders["GPUParticleEmitCS"] = d3dUtil::CompileShader(L"Resources/Shaders/EmitComputeShader.hlsl", nullptr, "main", "cs_5_1");
+	Shaders["GPUParticleUpdateCS"] = d3dUtil::CompileShader(L"Resources/Shaders/UpdateComputeShader.hlsl", nullptr, "main", "cs_5_1");
+	Shaders["GPUParticleCopyDrawCountCS"] = d3dUtil::CompileShader(L"Resources/Shaders/CopyDrawCountComputeShader.hlsl", nullptr, "main", "cs_5_1");
+	Shaders["GPUParticleDeadListInitCS"] = d3dUtil::CompileShader(L"Resources/Shaders/DeadListInitComputeShader.hlsl", nullptr, "main", "cs_5_1");
 
 	inputLayout =
 	{
@@ -845,6 +1002,97 @@ void Game::BuildPSOs()
 	skyPSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
 	skyPSODescription.DSVFormat = DepthStencilFormat;
 	ThrowIfFailed(Device->CreateGraphicsPipelineState(&skyPSODescription, IID_PPV_ARGS(&PSOs["sky"])));
+
+	// gpu particle graphic PSO
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpuParticlePSODescription;
+	ZeroMemory(&gpuParticlePSODescription, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	gpuParticlePSODescription.pRootSignature = rootSignature.Get();
+	gpuParticlePSODescription.VS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["GPUParticleVS"]->GetBufferPointer()),
+		Shaders["GPUParticleVS"]->GetBufferSize()
+	};
+	gpuParticlePSODescription.PS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["GPUParticlePS"]->GetBufferPointer()),
+		Shaders["GPUParticlePS"]->GetBufferSize()
+	};
+	gpuParticlePSODescription.GS =
+	{
+		reinterpret_cast<BYTE*>(Shaders["GS"]->GetBufferPointer()),
+		Shaders["GPUParticleGS"]->GetBufferSize()
+	};
+
+	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc = {};
+	transparencyBlendDesc.BlendEnable = true;
+	transparencyBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+	transparencyBlendDesc.DestBlend = D3D12_BLEND_ONE;
+	transparencyBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	transparencyBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	transparencyBlendDesc.DestBlendAlpha = D3D12_BLEND_ONE;
+	transparencyBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	D3D12_DEPTH_STENCIL_DESC depth;
+	depth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depth.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depth.DepthEnable = true;
+
+	gpuParticlePSODescription.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	gpuParticlePSODescription.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	gpuParticlePSODescription.BlendState.RenderTarget[0] = transparencyBlendDesc;
+	gpuParticlePSODescription.DepthStencilState = depth;
+	gpuParticlePSODescription.SampleMask = UINT_MAX;
+	gpuParticlePSODescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	gpuParticlePSODescription.NumRenderTargets = 1;
+	gpuParticlePSODescription.RTVFormats[0] = BackBufferFormat;
+	gpuParticlePSODescription.SampleDesc.Count = xMsaaState ? 4 : 1;
+	gpuParticlePSODescription.SampleDesc.Quality = xMsaaState ? (xMsaaQuality - 1) : 0;
+	gpuParticlePSODescription.DSVFormat = DepthStencilFormat;
+	ThrowIfFailed(Device->CreateGraphicsPipelineState(&gpuParticlePSODescription, IID_PPV_ARGS(&PSOs["GPUParticle"])));
+
+	// gpu particle compute PSOs
+	{
+		D3D12_COMPUTE_PIPELINE_STATE_DESC particleEmitPSO = {};
+		particleEmitPSO.pRootSignature = rootSignature.Get();
+		particleEmitPSO.CS =
+		{
+			reinterpret_cast<BYTE*>(Shaders["GPUParticleEmitCS"]->GetBufferPointer()),
+			Shaders["GPUParticleEmitCS"]->GetBufferSize()
+		};
+		particleEmitPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		ThrowIfFailed(Device->CreateComputePipelineState(&particleEmitPSO, IID_PPV_ARGS(&PSOs["particleEmit"])));
+
+		D3D12_COMPUTE_PIPELINE_STATE_DESC particleUpdatePSO = {};
+		particleUpdatePSO.pRootSignature = rootSignature.Get();
+		particleUpdatePSO.CS =
+		{
+			reinterpret_cast<BYTE*>(Shaders["GPUParticleUpdateCS"]->GetBufferPointer()),
+			Shaders["GPUParticleUpdateCS"]->GetBufferSize()
+		};
+		particleUpdatePSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		ThrowIfFailed(Device->CreateComputePipelineState(&particleUpdatePSO, IID_PPV_ARGS(&PSOs["particleUpdate"])));
+
+		D3D12_COMPUTE_PIPELINE_STATE_DESC particleDrawPSO = {};
+		particleDrawPSO.pRootSignature = rootSignature.Get();
+		particleDrawPSO.CS =
+		{
+			reinterpret_cast<BYTE*>(Shaders["GPUParticleCopyDrawCountCS"]->GetBufferPointer()),
+			Shaders["GPUParticleCopyDrawCountCS"]->GetBufferSize()
+		};
+		particleDrawPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		ThrowIfFailed(Device->CreateComputePipelineState(&particleDrawPSO, IID_PPV_ARGS(&PSOs["particleDraw"])));
+
+		D3D12_COMPUTE_PIPELINE_STATE_DESC particleDeadListPSO = {};
+		particleDeadListPSO.pRootSignature = rootSignature.Get();
+		particleDeadListPSO.CS =
+		{
+			reinterpret_cast<BYTE*>(Shaders["GPUParticleDeadListInitCS"]->GetBufferPointer()),
+			Shaders["GPUParticleDeadListInitCS"]->GetBufferSize()
+		};
+		particleDeadListPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		ThrowIfFailed(Device->CreateComputePipelineState(&particleDeadListPSO, IID_PPV_ARGS(&PSOs["particleDeadList"])));
+	}
 }
 
 void Game::BuildFrameResources()
@@ -1057,6 +1305,81 @@ void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<En
 
 		cmdList->DrawIndexedInstanced(e->meshData.IndexCount, 1, e->meshData.StartIndexLocation, e->meshData.BaseVertexLocation, 0);
 	}
+}
+
+void Game::GPUParticles(ID3D12GraphicsCommandList* cmdList)
+{
+	cmdList->SetPipelineState(PSOs["particleEmit"].Get());
+	cmdList->SetComputeRootSignature(rootSignature.Get());
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
+	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
+	auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
+	CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
+
+	cmdList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
+	cmdList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
+	cmdList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
+	cmdList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
+
+	float emitTimeCounter = gpuEmitter->GetEmitTimeCounter();
+	float timeBetweenEmit = gpuEmitter->GetTimeBetweenEmit();
+	float maxParticles = gpuEmitter->GetMaxParticles();
+
+	while (emitTimeCounter >= timeBetweenEmit)
+	{
+		int emitCount = emitTimeCounter / timeBetweenEmit;
+		emitCount = min(emitCount, 65535);
+
+		gpuEmitter->SetEmitCount(emitCount);
+		gpuEmitter->SetEmitTimeCounter(fmod(emitTimeCounter, timeBetweenEmit));
+
+		UpdateMainPassCB(timer);
+
+		cmdList->Dispatch(emitCount, 1, 1);
+	}
+
+	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(GPUParticleResources["DrawList"]->Resource.Get(),
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_DEST));
+
+	CommandList->CopyResource(GPUParticleResources["DrawList"]->Resource.Get(), GPUParticleResources["DrawList"]->UploadHeap.Get());
+
+	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(GPUParticleResources["DrawList"]->Resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+
+	cmdList->SetPipelineState(PSOs["particleUpdate"].Get());
+	cmdList->SetComputeRootSignature(rootSignature.Get());
+	cmdList->Dispatch(maxParticles, 1, 1);
+
+	cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(GPUParticleResources["DrawList"]->Resource.Get()));
+
+	cmdList->SetPipelineState(PSOs["particleDraw"].Get());
+	cmdList->SetComputeRootSignature(rootSignature.Get());
+	cmdList->Dispatch(1, 1, 1);
+
+	cmdList->SetPipelineState(PSOs["opaue"].Get());
+	cmdList->SetComputeRootSignature(rootSignature.Get());
+
+	cmdList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	cmdList->SetGraphicsRootDescriptorTable(5, GPUParticleResources["ParticlePool"]->GPUSRVHandle);
+	cmdList->SetGraphicsRootDescriptorTable(6, GPUParticleResources["DrawList"]->GPUSRVHandle);
+
+	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(GPUParticleResources["DrawArgs"]->Resource.Get(),
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT));
+
+	cmdList->ExecuteIndirect(particleCommandSignature.Get(),
+		1,
+		GPUParticleResources["DrawList"]->Resource.Get(),
+		0,
+		nullptr,
+		0);
+
+	CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(GPUParticleResources["DrawArgs"]->Resource.Get(), ,
+		D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Game::GetStaticSamplers()

@@ -1,4 +1,4 @@
-#include "LightingUtil.hlsl"
+#include "GPUParticleInclude.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -38,10 +38,20 @@ cbuffer particleData : register(b3)
 	int gridSize;
 }
 
-Texture2D    particleMap : register(t0);
-SamplerState sampleLinear  : register(s0);
+StructuredBuffer<Particle> ParticlePool		: register(t0);
+StructuredBuffer<ParticleDraw> DrawList		: register(t1);
 
-float4 main(VS_OUTPUT input) : SV_TARGET
+VS_OUTPUT main(uint id : SV_VertexID)
 {
-	return particleMap.Sample(sampleLinear, input.UV) * input.Color * input.Color.a;
+	VS_OUTPUT output;
+
+	ParticleDraw draw = DrawList.Load(id);
+	Particle particle = ParticlePool.Load(draw.Index);
+
+	// pass through
+	output.Position = particle.Position;
+	output.Size = particle.Size;
+	output.Color = particle.Color;
+
+	return output;
 }

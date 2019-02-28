@@ -1,4 +1,4 @@
-#include "LightingUtil.hlsl"
+#include "GPUParticleInclude.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -38,10 +38,12 @@ cbuffer particleData : register(b3)
 	int gridSize;
 }
 
-Texture2D    particleMap : register(t0);
-SamplerState sampleLinear  : register(s0);
-
-float4 main(VS_OUTPUT input) : SV_TARGET
+float4 main(GS_OUTPUT input) : SV_TARGET
 {
-	return particleMap.Sample(sampleLinear, input.UV) * input.Color * input.Color.a;
+	input.UV = input.UV * 2 - 1;
+
+	float fade = saturate(distance(float2(0, 0), input.UV));
+	float3 color = lerp(input.Color.rgb, float3(0, 0, 0), fade * fade);
+
+	return float4(color, 1);
 }

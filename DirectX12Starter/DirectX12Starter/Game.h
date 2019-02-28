@@ -56,7 +56,8 @@ private:
 	int currentFrameResourceIndex = 0;
 
 	ComPtr<ID3D12RootSignature> rootSignature = nullptr;
-	
+	ComPtr<ID3D12CommandSignature> particleCommandSignature = nullptr;
+
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> matCBVHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> SRVHeap = nullptr;
@@ -86,6 +87,7 @@ private:
 	GPUParticleConstants MainGPUParticleCB;
 
 	UINT PassCbvOffset = 0;
+	UINT GPUParticleCBVOffset = 0;
 
 	Camera mainCamera;
 
@@ -109,6 +111,7 @@ private:
 	void UpdateObjectCBs(const Timer& timer);
 	void UpdateMainPassCB(const Timer& timer);
 	void UpadteMaterialCBs(const Timer& timet);
+	void UpadteGPUParticleCBs(const Timer& timet);
 
 	void BuildTextures();
 	void BuildDescriptorHeaps();
@@ -121,6 +124,7 @@ private:
 	void BuildMaterials();
 	void BuildEntities();
 	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+	void GPUParticles(ID3D12GraphicsCommandList* cmdList);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
