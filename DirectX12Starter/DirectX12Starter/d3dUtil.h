@@ -288,6 +288,18 @@ struct Texture
 	Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
 };
 
+struct GPUParticleTexture : public Texture
+{
+	UINT64 StructByStride;
+	UINT64 NumberOfElements;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUSRVHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUSRVHandle;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE CPUUAVHandle;
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GPUAVHandle;
+};
+
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x)                                              \
 {                                                                     \

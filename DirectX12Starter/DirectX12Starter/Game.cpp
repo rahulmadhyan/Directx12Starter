@@ -370,6 +370,27 @@ void Game::BuildTextures()
 		cubeMapTexture->UploadHeap));
 
 	CubeMapTextures[cubeMapTexture->Name] = std::move(cubeMapTexture);
+
+	// gpu particle resources
+	auto particlePoolResource = std::make_unique<GPUParticleTexture>();
+	particlePoolResource->Name = "ParticlePool";
+	particlePoolResource->NumberOfElements = gpuEmitter->GetMaxParticles();
+	particlePoolResource->StructByStride = sizeof(GPUParticle);
+
+	auto deadListResource = std::make_unique<GPUParticleTexture>();
+	deadListResource->Name = "DeadList";
+	deadListResource->NumberOfElements = gpuEmitter->GetMaxParticles();
+	deadListResource->StructByStride = sizeof(unsigned int);
+
+	auto drawListResource = std::make_unique<GPUParticleTexture>();
+	drawListResource->Name = "DrawList";
+	drawListResource->NumberOfElements = gpuEmitter->GetMaxParticles();
+	drawListResource->StructByStride = sizeof(GPUParticleSort);
+
+	auto drawArgsResource = std::make_unique<GPUParticleTexture>();
+	drawArgsResource->Name = "DrawArgs";
+	drawArgsResource->NumberOfElements = 9;
+	drawArgsResource->StructByStride = sizeof(unsigned int);
 }
 
 void Game::BuildDescriptorHeaps()
@@ -415,6 +436,12 @@ void Game::BuildDescriptorHeaps()
 	SRVHeapDesc.NodeMask = 0;
 	ThrowIfFailed(Device->CreateDescriptorHeap(&SRVHeapDesc, IID_PPV_ARGS(&SRVHeap)));
 
+	// heap for GPU particle resources
+	D3D12_DESCRIPTOR_HEAP_DESC GPUSRVUAVHeapDesc = {};
+	GPUSRVUAVHeapDesc.NumDescriptors = 6;
+	GPUSRVUAVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	GPUSRVUAVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(Device->CreateDescriptorHeap(&GPUSRVUAVHeapDesc, IID_PPV_ARGS(&GPUParticleSRVUAVHeap)));
 }
 
 void Game::BuildConstantBufferViews()
@@ -534,6 +561,11 @@ void Game::BuildConstantBufferViews()
 		Device->CreateShaderResourceView(texture.Get(), &SRVDesc, handle);
 
 		SRVHeapIndex++;
+	}
+
+	for (auto it = GPUParticleResources.begin(); it != GPUParticleResources.end(); ++it)
+	{
+		
 	}
 }
 

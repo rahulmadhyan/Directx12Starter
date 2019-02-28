@@ -12,6 +12,7 @@
 #include "Enemies.h"
 #include "Ray.h"
 #include "Emitter.h"
+#include "GPUEmitter.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -59,6 +60,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> CBVHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> matCBVHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> SRVHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> GPUParticleSRVUAVHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> Geometries;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> Shaders;
@@ -66,6 +68,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> Materials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> Textures;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> CubeMapTextures;
+	std::unordered_map<std::string, std::unique_ptr<GPUParticleTexture>> GPUParticleResources;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> particleInputLayout;
@@ -80,6 +83,7 @@ private:
 	std::vector<Entity*> skyEntities;
 
 	PassConstants MainPassCB;
+	GPUParticleConstants MainGPUParticleCB;
 
 	UINT PassCbvOffset = 0;
 
@@ -92,6 +96,8 @@ private:
 	Player *player;
 
 	Enemies *enemies;
+
+	GPUEmitter* gpuEmitter;
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
@@ -117,5 +123,15 @@ private:
 	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+
+	// We pack the UAV counter into the same buffer as the commands rather than create
+	// a separate 64K resource/heap for it. The counter must be aligned on 4K boundaries,
+	// so we pad the command buffer (if necessary) such that the counter will be placed
+	// at a valid location in the buffer.
+	static inline UINT AlignForUavCounter(UINT bufferSize)
+	{
+		const UINT alignment = D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT;
+		return (bufferSize + (alignment - 1)) & ~(alignment - 1);
+	}
 };
 

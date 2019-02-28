@@ -17,7 +17,24 @@ struct PassConstants
 	DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	float pad1 = 0.0f;
 	DirectX::XMFLOAT4 ambientLight = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	float DeltaTime;
+	float TotalTime;
+	float AspectRatio;
+	float pad2 = 0.0f;
 	Light lights[MAX_LIGHTS];
+};
+
+struct GPUParticleConstants
+{
+	DirectX::XMFLOAT4 startColor;
+	DirectX::XMFLOAT4 endColor;
+	DirectX::XMFLOAT3 velocity;
+	float LifeTime = 0.0f;
+	DirectX::XMFLOAT3 acceleration;
+	float pad;
+	int EmitCount = 0;
+	int MaxParticles = 0;
+	int GridSize = 0;
 };
 
 struct ParticleVertex
@@ -33,7 +50,7 @@ struct FrameResource
 {
 public:
 
-	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT particleCount);
+	FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT particleCount, UINT GPUParticleCount);
 	FrameResource(const FrameResource& rhs) = delete;
 	FrameResource& operator=(const FrameResource& rhs) = delete;
 	~FrameResource();
@@ -46,6 +63,7 @@ public:
 	std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
 	std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
+	std::unique_ptr<UploadBuffer<GPUParticleConstants>> GPUParticleCB = nullptr;
 
 	//emitter dynamic vertex buffer
 	std::unique_ptr<UploadBuffer<ParticleVertex>> emitterVB = nullptr;
