@@ -49,4 +49,5 @@ struct Entity
 struct EnemyEntity : public Entity
 {
 	bool isRanged = false;
+	//int waypointIndex = 0;
 };

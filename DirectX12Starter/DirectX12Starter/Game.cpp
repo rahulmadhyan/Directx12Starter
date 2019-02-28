@@ -92,6 +92,8 @@ Game::~Game()
 	delete player;
 
 	delete enemies;
+
+	delete waypoints;
 }
 
 bool Game::Initialize()
@@ -115,6 +117,8 @@ bool Game::Initialize()
 	player = new Player(Device.Get(), CommandList.Get(), systemData);
 
 	enemies = new Enemies(systemData);
+
+	waypoints = new Waypoints(systemData);
 
 	BuildTextures();
 	BuildRootSignature();
@@ -1060,6 +1064,52 @@ void Game::BuildEntities()
 	}
 
 	// Add waypoint entities here
+	{
+		auto waypointEntity1 = std::make_unique<Entity>();
+		waypointEntity1->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
+		systemData->SetTranslation(currentEntityIndex, 0.0f, 2.0f, 30.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		waypointEntity1->ObjCBIndex = currentObjCBIndex;
+		waypointEntity1->Geo = Geometries["shapeGeo"].get();
+		waypointEntity1->Mat = Materials["demo1"].get();
+		waypointEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		waypointEntity1->meshData = waypointEntity1->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(waypointEntity1));
+		waypointEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+
+		auto waypointEntity2 = std::make_unique<Entity>();
+		waypointEntity2->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
+		systemData->SetTranslation(currentEntityIndex, 10.0f, 2.0f, 30.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		waypointEntity2->ObjCBIndex = currentObjCBIndex;
+		waypointEntity2->Geo = Geometries["shapeGeo"].get();
+		waypointEntity2->Mat = Materials["demo1"].get();
+		waypointEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		waypointEntity2->meshData = waypointEntity2->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(waypointEntity2));
+		waypointEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+
+		auto waypointEntity3 = std::make_unique<Entity>();
+		waypointEntity3->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
+		systemData->SetTranslation(currentEntityIndex, 20.0f, 2.0f, 30.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		waypointEntity3->ObjCBIndex = currentObjCBIndex;
+		waypointEntity3->Geo = Geometries["shapeGeo"].get();
+		waypointEntity3->Mat = Materials["demo1"].get();
+		waypointEntity3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		waypointEntity3->meshData = waypointEntity3->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(waypointEntity3));
+		waypointEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+	}
 
 	auto emitterEntity = std::make_unique<Entity>();
 	emitterEntity->SystemWorldIndex = currentEntityIndex;
