@@ -93,7 +93,11 @@
     <ClCompile Include="Emitter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+<<<<<<< HEAD
     <ClCompile Include="GPUEmitter.cpp">
+=======
+    <ClCompile Include="Waypoints.cpp">
+>>>>>>> 78b35f2bc863e87ac3113ea971cdf9fbee8efe29
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -170,7 +174,11 @@
     <ClInclude Include="Emitter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="GPUEmitter.h">
+=======
+    <ClInclude Include="Waypoints.h">
+>>>>>>> 78b35f2bc863e87ac3113ea971cdf9fbee8efe29
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
