@@ -94,6 +94,8 @@ Game::~Game()
 	delete enemies;
 
 	delete waypoints;
+
+	delete gpuEmitter;
 }
 
 bool Game::Initialize()
@@ -118,10 +120,10 @@ bool Game::Initialize()
 
 	enemies = new Enemies(systemData);
 
-<<<<<<< HEAD
+
 	gpuEmitter = new GPUEmitter(
 		100000,
-		1,
+		1000,
 		100000.0f,
 		100.0f,
 		XMFLOAT3(1.0f, 1.0f, -5.0f),
@@ -129,9 +131,8 @@ bool Game::Initialize()
 		XMFLOAT4(0.85f, 0.85f, 0.85f, 1.0f),
 		XMFLOAT4(0.5f, 0.5f, 0.5f, 0.3f)
 	);
-=======
+
 	waypoints = new Waypoints(systemData);
->>>>>>> 78b35f2bc863e87ac3113ea971cdf9fbee8efe29
 
 	BuildTextures();
 	BuildRootSignature();
@@ -1214,7 +1215,7 @@ void Game::BuildEntities()
 	gpuEmitterEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
-	systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
+	systemData->SetTranslation(currentEntityIndex, -10.0f, 0.0f, 0.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	gpuEmitterEntity->ObjCBIndex = currentObjCBIndex;
 	allEntities.push_back(std::move(gpuEmitterEntity));
