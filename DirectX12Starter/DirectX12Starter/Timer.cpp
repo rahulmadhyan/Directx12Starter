@@ -31,6 +31,11 @@ const float& Timer::GetDeltaTime() const
 	return deltaTime;
 }
 
+const float& Timer::GetTotalTime() const
+{
+	return totalTime;
+}
+
 void Timer::UpdateTimer()
 {
 	__int64 now;

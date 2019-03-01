@@ -10,6 +10,7 @@ public:
 	~Timer();
 
 	const float& GetDeltaTime() const;
+	const float& GetTotalTime() const;
 
 	void UpdateTimer();
 	void UpdateTitleBarStats();

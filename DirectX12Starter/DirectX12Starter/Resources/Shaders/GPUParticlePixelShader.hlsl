@@ -1,4 +1,7 @@
+#include "LightingUtil.hlsl"
 #include "GPUParticleInclude.hlsl"
+#include "SimplexNoise.hlsl"
+
 
 cbuffer cbPerObject : register(b0)
 {
@@ -13,6 +16,9 @@ cbuffer cbPass : register(b1)
 	float3 eyePosW;
 	float cbPerObjectPad1;
 	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
 
 	Light lights[MaxLights];
 }
@@ -37,6 +43,13 @@ cbuffer particleData : register(b3)
 	int maxParticles;
 	int gridSize;
 }
+
+struct GS_OUTPUT
+{
+	float4 Position		: SV_POSITION;
+	float4 Color		: COLOR;
+	float2 UV			: TEXCOORD;
+};
 
 float4 main(GS_OUTPUT input) : SV_TARGET
 {

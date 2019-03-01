@@ -1,3 +1,4 @@
+#include "LightingUtil.hlsl"
 #include "GPUParticleInclude.hlsl"
 #include "SimplexNoise.hlsl"
 
@@ -14,6 +15,9 @@ cbuffer cbPass : register(b1)
 	float3 eyePosW;
 	float cbPerObjectPad1;
 	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
 
 	Light lights[MaxLights];
 }

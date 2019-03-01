@@ -1,3 +1,6 @@
+#include "LightingUtil.hlsl"
+#include "GPUParticleInclude.hlsl"
+#include "SimplexNoise.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -12,6 +15,9 @@ cbuffer cbPass : register(b1)
 	float3 eyePosW;
 	float cbPerObjectPad1;
 	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
 
 	Light lights[MaxLights];
 }
@@ -62,7 +68,7 @@ void main(point VS_OUTPUT input[1], inout TriangleStream<GS_OUTPUT> outStream)
 	offsets[2] = float2(+1.0f, -1.0f);
 	offsets[3] = float2(+1.0f, +1.0f);
 
-	matrix mvp = mul(mul(world, view), projection);
+	matrix mvp = mul(mul(world, view), proj);
 
 	[unroll]
 	for (int i = 0; i < 4; i++)

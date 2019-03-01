@@ -72,7 +72,7 @@ void Camera::Update()
 
 	XMVECTOR pos = XMLoadFloat3(&position);
 
-	float moveRate = 0.001f;
+	float moveRate = 0.01f;
 
 	if (InputManager::getInstance()->isKeyPressed('W') || InputManager::getInstance()->isControllerButtonPressed(XINPUT_GAMEPAD_Y))
 	{

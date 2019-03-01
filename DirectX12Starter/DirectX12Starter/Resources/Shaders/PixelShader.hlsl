@@ -26,6 +26,9 @@ cbuffer cbPass : register(b1)
 	float3 eyePosW;
 	float cbPerObjectPad1;
 	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
 
 	Light lights[MaxLights];
 }
@@ -50,6 +53,13 @@ cbuffer particleData : register(b3)
 	int maxParticles;
 	int gridSize;
 }
+
+struct VS_OUTPUT
+{
+	float4 Position		: SV_POSITION;
+	float3 Normal		: NORMAL;
+	float2 UV			: TEXCOORD;
+};
 
 Texture2D    diffuseMap : register(t0);
 SamplerState sampleLinear  : register(s0);

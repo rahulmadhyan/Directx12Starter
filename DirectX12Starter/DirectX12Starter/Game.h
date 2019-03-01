@@ -124,7 +124,7 @@ private:
 	void BuildMaterials();
 	void BuildEntities();
 	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
-	void GPUParticles(ID3D12GraphicsCommandList* cmdList);
+	void DrawGPUParticles(ID3D12GraphicsCommandList* cmdList);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 

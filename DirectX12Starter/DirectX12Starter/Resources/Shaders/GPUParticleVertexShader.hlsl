@@ -1,4 +1,6 @@
+#include "LightingUtil.hlsl"
 #include "GPUParticleInclude.hlsl"
+#include "SimplexNoise.hlsl"
 
 cbuffer cbPerObject : register(b0)
 {
@@ -13,6 +15,9 @@ cbuffer cbPass : register(b1)
 	float3 eyePosW;
 	float cbPerObjectPad1;
 	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
 
 	Light lights[MaxLights];
 }
@@ -38,8 +43,15 @@ cbuffer particleData : register(b3)
 	int gridSize;
 }
 
-StructuredBuffer<Particle> ParticlePool		: register(t0);
-StructuredBuffer<ParticleDraw> DrawList		: register(t1);
+struct VS_OUTPUT
+{
+	float3 Position		: POSITION;
+	float Size			: SIZE;
+	float4 Color		: COLOR;
+};
+
+StructuredBuffer<Particle> ParticlePool		: register(t1);
+StructuredBuffer<ParticleDraw> DrawList		: register(t2);
 
 VS_OUTPUT main(uint id : SV_VertexID)
 {
