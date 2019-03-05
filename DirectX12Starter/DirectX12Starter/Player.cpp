@@ -47,7 +47,7 @@ Emitter* Player::GetEmitter() const
 	return emitter;
 }
 
-void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<Entity*> enemyEntities)
+void Player::Update(const Timer &timer, Entity *playerEntity, std::vector<EnemyEntity*> enemyEntities)
 {
 	UINT playerEntityIndex = playerEntity->SystemWorldIndex;
 	const XMFLOAT3* playerRotation = systemData->GetWorldRotation(playerEntity->SystemWorldIndex);

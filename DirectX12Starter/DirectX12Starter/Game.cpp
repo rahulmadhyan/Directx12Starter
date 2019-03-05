@@ -169,7 +169,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	//enemies->Update(timer, playerEntities[0], enemyEntities);
+	enemies->Update(timer, playerEntities[0], enemyEntities, waypointEntities);
 	
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();
@@ -224,6 +224,7 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
+	DrawEntities(CommandList.Get(), waypointEntities);
 	
 	CommandList->SetPipelineState(PSOs["sky"].Get());
 	DrawEntities(CommandList.Get(), skyEntities);
@@ -1002,7 +1003,7 @@ void Game::BuildEntities()
 
 	// enemy entities
 	{
-		auto enemyEntity1 = std::make_unique<Entity>();
+		auto enemyEntity1 = std::make_unique<EnemyEntity>();
 		enemyEntity1->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
 		systemData->SetTranslation(currentEntityIndex, 75.0f, 2.0f, 20.0f);
@@ -1012,12 +1013,14 @@ void Game::BuildEntities()
 		enemyEntity1->Mat = Materials["demo1"].get();
 		enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["Cylinder"];
+		enemyEntity1->isRanged = false;
+		enemyEntity1->currentWaypointIndex = 0;
 		allEntities.push_back(std::move(enemyEntity1));
 		enemyEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
 		currentObjCBIndex++;
 
-		auto enemyEntity2 = std::make_unique<Entity>();
+		/*auto enemyEntity2 = std::make_unique<EnemyEntity>();
 		enemyEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
 		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 5.0f);
@@ -1030,9 +1033,9 @@ void Game::BuildEntities()
 		allEntities.push_back(std::move(enemyEntity2));
 		enemyEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;
+		currentObjCBIndex++;*/
 
-		auto enemyEntity3 = std::make_unique<Entity>();
+		/*auto enemyEntity3 = std::make_unique<EnemyEntity>();
 		enemyEntity3->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
 		systemData->SetTranslation(currentEntityIndex, 30.0f, 2.0f, -10.0f);
@@ -1045,9 +1048,9 @@ void Game::BuildEntities()
 		allEntities.push_back(std::move(enemyEntity3));
 		enemyEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;
+		currentObjCBIndex++;*/
 
-		auto enemyEntity4 = std::make_unique<Entity>();
+		/*auto enemyEntity4 = std::make_unique<EnemyEntity>();
 		enemyEntity4->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
 		systemData->SetTranslation(currentEntityIndex, 20.0f, 2.0f, 30.0f);
@@ -1060,7 +1063,7 @@ void Game::BuildEntities()
 		allEntities.push_back(std::move(enemyEntity4));
 		enemyEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;
+		currentObjCBIndex++;*/
 	}
 
 	// Add waypoint entities here
@@ -1143,6 +1146,55 @@ void Game::BuildEntities()
 }
 
 void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
+{
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	auto objectCB = currentFrameResource->ObjectCB->Resource();
+	auto matCB = currentFrameResource->MaterialCB->Resource();
+
+	// For each render item...
+	for (size_t i = 0; i < entities.size(); ++i)
+	{
+		auto e = entities[i];
+
+		cmdList->IASetVertexBuffers(0, 1, &e->Geo->VertexBufferView());
+		cmdList->IASetIndexBuffer(&e->Geo->IndexBufferView());
+		cmdList->IASetPrimitiveTopology(e->PrimitiveType);
+
+		ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
+
+		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
+		UINT objCBVIndex = currentFrameResourceIndex * (UINT)allEntities.size() + e->ObjCBIndex;
+		auto objCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+		objCBVHandle.Offset(objCBVIndex, CBVSRVUAVDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(0, objCBVHandle);
+
+		ID3D12DescriptorHeap* matDescriptorHeaps[] = { matCBVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(matDescriptorHeaps), matDescriptorHeaps);
+
+		UINT matCBVIndex = currentFrameResourceIndex * (UINT)Materials.size() + e->Mat->MatCBIndex;
+		auto matCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(matCBVHeap->GetGPUDescriptorHandleForHeapStart());
+		matCBVHandle.Offset(matCBVIndex, CBVSRVUAVDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(2, matCBVHandle);
+
+		ID3D12DescriptorHeap* srvDescriptorHeaps[] = { SRVHeap.Get() };
+		cmdList->SetDescriptorHeaps(_countof(srvDescriptorHeaps), srvDescriptorHeaps);
+
+		UINT srvIndex = e->Mat->DiffuseSrvHeapIndex;
+		auto srvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(SRVHeap->GetGPUDescriptorHandleForHeapStart());
+		srvHandle.Offset(srvIndex, CBVSRVUAVDescriptorSize);
+
+		cmdList->SetGraphicsRootDescriptorTable(3, srvHandle);
+
+		cmdList->DrawIndexedInstanced(e->meshData.IndexCount, 1, e->meshData.StartIndexLocation, e->meshData.BaseVertexLocation, 0);
+	}
+}
+
+void Game::DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<EnemyEntity*> entities)
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));

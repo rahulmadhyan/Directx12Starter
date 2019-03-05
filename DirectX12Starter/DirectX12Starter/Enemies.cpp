@@ -14,7 +14,7 @@ Enemies::~Enemies()
 }
 
 // have the update function include waypoints vector
-void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<XMFLOAT3*> waypoints)
+void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints)
 {
 	const float deltaTime = timer.GetDeltaTime();
 	//int currentWaypointIndex = 0;
@@ -39,8 +39,11 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 		XMStoreFloat(&distance, length);
 
 		// Waypoint calculation
-		XMFLOAT3* currentWaypoint = waypoints[currentWaypointIndex % 3];
-		XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
+		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 3];
+		//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
+
+
+		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
 		XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
 		XMVECTOR waypointLength = XMVector3Length(differenceWaypointVector);
 
@@ -85,7 +88,7 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 			}
 			else if (distanceToWaypoint < 1.0f)
 			{
-				currentWaypointIndex++;
+				e->currentWaypointIndex++;
 			}
 		}
 	}

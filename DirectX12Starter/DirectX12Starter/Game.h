@@ -76,7 +76,7 @@ private:
 
 	std::vector<Entity*> playerEntities;
 	std::vector<Entity*> sceneEntities;
-	std::vector<Entity*> enemyEntities;
+	std::vector<EnemyEntity*> enemyEntities;
 	std::vector<Entity*> waypointEntities;
 	std::vector<Entity*> emitterEntities;
 	std::vector<Entity*> skyEntities;
@@ -119,6 +119,7 @@ private:
 	void BuildMaterials();
 	void BuildEntities();
 	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+	void DrawEntities(ID3D12GraphicsCommandList* cmdList, const std::vector<EnemyEntity*> entities);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 };
