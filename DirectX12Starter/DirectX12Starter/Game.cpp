@@ -47,6 +47,31 @@ void Game::DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entit
 	}
 }
 
+void Game::DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<EnemyEntity*> entities)
+{
+	// For each render item...
+	for (size_t i = 0; i < entities.size(); ++i)
+	{
+		auto e = entities[i];
+
+		const XMFLOAT4X4* currentWorldMatrix = systemData->GetWorldMatrix(e->SystemWorldIndex);
+		XMMATRIX world = DirectX::XMLoadFloat4x4(currentWorldMatrix);
+
+		XMMATRIX proj = DirectX::XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
+
+		XMMATRIX view = DirectX::XMLoadFloat4x4(&mainCamera.GetViewMatrix());
+
+		effect->SetMatrices(world, view, proj);
+
+		effect->Apply(cmdList);
+		batch->Begin(cmdList);
+
+		DX::Draw(batch.get(), e->meshData.Bounds, DirectX::Colors::Red);
+
+		batch->End();
+	}
+}
+
 void Game::DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities)
 {
 	const Ray* playerRay = player->GetRay();
@@ -224,7 +249,7 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
-	DrawEntities(CommandList.Get(), waypointEntities);
+	//DrawEntities(CommandList.Get(), waypointEntities);
 	
 	CommandList->SetPipelineState(PSOs["sky"].Get());
 	DrawEntities(CommandList.Get(), skyEntities);
@@ -1016,11 +1041,11 @@ void Game::BuildEntities()
 		enemyEntity1->isRanged = false;
 		enemyEntity1->currentWaypointIndex = 0;
 		allEntities.push_back(std::move(enemyEntity1));
-		enemyEntities.push_back(allEntities[currentEntityIndex].get());
+		enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
 		currentObjCBIndex++;
 
-		/*auto enemyEntity2 = std::make_unique<EnemyEntity>();
+		auto enemyEntity2 = std::make_unique<EnemyEntity>();
 		enemyEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
 		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 5.0f);
@@ -1030,10 +1055,12 @@ void Game::BuildEntities()
 		enemyEntity2->Mat = Materials["demo1"].get();
 		enemyEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		enemyEntity2->meshData = enemyEntity2->Geo->DrawArgs["Cylinder"];
+		enemyEntity2->isRanged = false;
+		enemyEntity2->currentWaypointIndex = 3;
 		allEntities.push_back(std::move(enemyEntity2));
-		enemyEntities.push_back(allEntities[currentEntityIndex].get());
+		enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;*/
+		currentObjCBIndex++;
 
 		/*auto enemyEntity3 = std::make_unique<EnemyEntity>();
 		enemyEntity3->SystemWorldIndex = currentEntityIndex;
@@ -1053,15 +1080,17 @@ void Game::BuildEntities()
 		/*auto enemyEntity4 = std::make_unique<EnemyEntity>();
 		enemyEntity4->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
-		systemData->SetTranslation(currentEntityIndex, 20.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, 20.0f, 2.0f, -10.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		enemyEntity4->ObjCBIndex = currentObjCBIndex;
 		enemyEntity4->Geo = Geometries["shapeGeo"].get();
 		enemyEntity4->Mat = Materials["demo1"].get();
 		enemyEntity4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		enemyEntity4->meshData = enemyEntity4->Geo->DrawArgs["Cylinder"];
+		enemyEntity4->isRanged = true;
+		enemyEntity4->currentWaypointIndex = 0;
 		allEntities.push_back(std::move(enemyEntity4));
-		enemyEntities.push_back(allEntities[currentEntityIndex].get());
+		enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
 		currentObjCBIndex++;*/
 	}
@@ -1071,7 +1100,7 @@ void Game::BuildEntities()
 		auto waypointEntity1 = std::make_unique<Entity>();
 		waypointEntity1->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 0.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 30.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity1->ObjCBIndex = currentObjCBIndex;
 		waypointEntity1->Geo = Geometries["shapeGeo"].get();
@@ -1086,7 +1115,7 @@ void Game::BuildEntities()
 		auto waypointEntity2 = std::make_unique<Entity>();
 		waypointEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 10.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 0.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity2->ObjCBIndex = currentObjCBIndex;
 		waypointEntity2->Geo = Geometries["shapeGeo"].get();
@@ -1101,7 +1130,7 @@ void Game::BuildEntities()
 		auto waypointEntity3 = std::make_unique<Entity>();
 		waypointEntity3->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 20.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, 70.0f, 2.0f, 30.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity3->ObjCBIndex = currentObjCBIndex;
 		waypointEntity3->Geo = Geometries["shapeGeo"].get();
@@ -1109,6 +1138,21 @@ void Game::BuildEntities()
 		waypointEntity3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		waypointEntity3->meshData = waypointEntity3->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(waypointEntity3));
+		waypointEntities.push_back(allEntities[currentEntityIndex].get());
+		currentEntityIndex++;
+		currentObjCBIndex++;
+
+		auto waypointEntity4 = std::make_unique<Entity>();
+		waypointEntity4->SystemWorldIndex = currentEntityIndex;
+		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
+		systemData->SetTranslation(currentEntityIndex, 70.0f, 2.0f, 0.0f);
+		systemData->SetWorldMatrix(currentEntityIndex);
+		waypointEntity4->ObjCBIndex = currentObjCBIndex;
+		waypointEntity4->Geo = Geometries["shapeGeo"].get();
+		waypointEntity4->Mat = Materials["demo1"].get();
+		waypointEntity4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		waypointEntity4->meshData = waypointEntity4->Geo->DrawArgs["Box"];
+		allEntities.push_back(std::move(waypointEntity4));
 		waypointEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
 		currentObjCBIndex++;

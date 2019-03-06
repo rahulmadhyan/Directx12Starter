@@ -48,6 +48,7 @@ private:
 
 	void InitDebugDraw();
 	void DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
+	void DebugDraw(ID3D12GraphicsCommandList* cmdList, const std::vector<EnemyEntity*> entities);
 	void DebugDrawPlayerRay(ID3D12GraphicsCommandList* cmdList, const std::vector<Entity*> entities);
 #endif // DEBUG
 

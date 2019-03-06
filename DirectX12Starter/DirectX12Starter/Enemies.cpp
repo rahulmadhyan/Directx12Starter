@@ -27,21 +27,22 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 		XMVECTOR differenceVector = XMVectorSubtract(playerPosition, enemyPosition);
 		XMVECTOR length = XMVector3Length(differenceVector);
 
-		XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+		const XMFLOAT3* enemyRotation = systemData->GetWorldRotation(e->SystemWorldIndex);
+		XMVECTOR enemyRotationVector = XMLoadFloat3(enemyRotation);
+		//XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
 		XMVECTOR normalDifferenceVector = XMVector3Normalize(differenceVector);
 
-		XMVECTOR rotation = XMVectorSubtractAngles(differenceVector, forward);
+		XMVECTOR rotation = XMVectorSubtractAngles(differenceVector, enemyRotationVector);
 
-		XMMATRIX rotMatrix = XMMatrixRotationRollPitchYawFromVector(rotation);
+		XMMATRIX rotMatrix = XMMatrixRotationRollPitchYaw(0.0f, enemyRotation->y, 0.0f);
 
 		float distance = 0.0f;
 		XMStoreFloat(&distance, length);
 
 		// Waypoint calculation
-		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 3];
+		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 4];
 		//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
-
 
 		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
 		XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
@@ -55,12 +56,12 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 		if (e->isRanged && distance < 20.0f)
 		{
 			// look at
-			enemyPosition = XMVector3Transform(enemyPosition, rotMatrix);
+			XMVECTOR newPosition = XMVector3Transform(enemyPosition, rotMatrix);
 
 			XMFLOAT3 rangedEnemyPos;
-			XMStoreFloat3(&rangedEnemyPos, enemyPosition);
+			XMStoreFloat3(&rangedEnemyPos, newPosition);
 
-			systemData->SetTranslation(e->SystemWorldIndex, rangedEnemyPos.x, rangedEnemyPos.y, rangedEnemyPos.z);
+			systemData->SetRotation(e->SystemWorldIndex, 0.0f, rangedEnemyPos.y, 0.0f); 			
 			systemData->SetWorldMatrix(e->SystemWorldIndex);
 
 			e->NumFramesDirty = gNumberFrameResources;
