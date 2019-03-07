@@ -19,6 +19,27 @@
     <FxCompile Include="Resources\Shaders\SkyVS.hlsl">
       <Filter>Shader Files</Filter>
     </FxCompile>
+    <FxCompile Include="Resources\Shaders\CopyDrawCountComputeShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\DeadListInitComputeShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\EmitComputeShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\GPUParticleGeometryShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\GPUParticlePixelShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\GPUParticleVertexShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\UpdateComputeShader.hlsl">
+      <Filter>Shader Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -73,6 +94,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Waypoints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUEmitter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -152,6 +176,9 @@
     <ClInclude Include="Waypoints.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GPUEmitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="DirectX12Starter.ico">
@@ -167,6 +194,9 @@
     </None>
     <None Include="packages.config">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\GPUParticleInclude.hlsl">
+      <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

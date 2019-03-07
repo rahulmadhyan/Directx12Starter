@@ -1,0 +1,80 @@
+#include "LightingUtil.hlsl"
+#include "GPUParticleInclude.hlsl"
+#include "SimplexNoise.hlsl"
+
+cbuffer cbPerObject : register(b0)
+{
+	float4x4 world;
+	float4x4 textureTransform;
+}
+
+cbuffer cbPass : register(b1)
+{
+	float4x4 view;
+	float4x4 proj;
+	float3 eyePosW;
+	float cbPerObjectPad1;
+	float4 ambientLight;
+	float deltaTime;
+	float totalTime;
+	float aspectRatio;
+
+	Light lights[MaxLights];
+}
+
+cbuffer cbMaterial : register(b2)
+{
+	float4 diffuseAlbedo;
+	float3 fresnelR0;
+	float  roughness;
+	float4x4 materialTransform;
+}
+
+cbuffer particleData : register(b3)
+{
+	float4 startColor;
+	float4 endColor;
+	float3 velocity;
+	float lifeTime;
+	float3 acceleration;
+	float pad;
+	int emitCount;
+	int maxParticles;
+	int gridSize;
+}
+
+RWStructuredBuffer<Particle> ParticlePool		: register(u0);
+ConsumeStructuredBuffer<uint> CDeadList			: register(u1);
+RWStructuredBuffer<ParticleDraw> DrawList		: register(u2);
+RWStructuredBuffer<uint> DrawArgs				: register(u3);
+
+[numthreads(32, 1, 1)]
+void main(uint id : SV_DispatchThreadID )
+{
+	if (id.x >= (uint)emitCount)
+		return;
+
+	uint emitIndex = CDeadList.Consume();
+
+	float3 gridPosition;
+	uint gridIndex = emitIndex;
+	gridPosition.x = gridIndex % (gridSize + 1);
+	gridIndex /= (gridSize + 1);
+	gridPosition.y = gridIndex % (gridSize + 1);
+	gridIndex /= (gridSize + 1);
+	gridPosition.z = gridIndex;
+
+	// update it in ParticlePool
+	Particle emitParticle = ParticlePool.Load(emitIndex);
+
+	//color and position depend on the grid position and size
+	emitParticle.Position = gridPosition - float3(0.0f, 0.0f, -gridSize / 10.0f);;
+	emitParticle.Velocity = velocity;
+	emitParticle.Color = startColor;
+	emitParticle.Age = 0.0f;
+	emitParticle.Size = 0.25f;
+	emitParticle.Alive = 1.0f;
+
+	//Put it back
+	ParticlePool[emitIndex] = emitParticle;
+}

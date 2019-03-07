@@ -151,11 +151,11 @@ bool Game::Initialize()
 		100000,
 		1000,
 		100000.0f,
-		100.0f,
+		1000.0f,
 		XMFLOAT3(1.0f, 1.0f, -5.0f),
 		XMFLOAT3(0.0f, 0.0f, 0.0f),
 		XMFLOAT4(0.85f, 0.85f, 0.85f, 1.0f),
-		XMFLOAT4(0.5f, 0.5f, 0.5f, 0.3f)
+		XMFLOAT4(0.5f, 0.5f, 0.5f, 0.5f)
 	);
 
 	BuildTextures();
@@ -252,7 +252,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	//enemies->Update(timer, playerEntities[0], enemyEntities);
+	enemies->Update(timer, playerEntities[0], enemyEntities, waypointEntities);
 
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();
@@ -380,7 +380,7 @@ void Game::UpdateObjectCBs(const Timer & timer)
 void Game::UpdateMainPassCB(const Timer &timer)
 {
 	XMMATRIX view = XMLoadFloat4x4(&mainCamera.GetViewMatrix());
-	XMMATRIX projection = XMLoadFloat4x4(&mainCamera.GetProjectionMatrix()); 
+	XMMATRIX projection = XMLoadFloat4x4(&mainCamera.GetProjectionMatrix());
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, projection);
 
@@ -388,10 +388,15 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(projection));
 
 	MainPassCB.CameraPosition = mainCamera.GetCameraPosition();
-	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.5f);
 
-	MainPassCB.lights[0].Direction = { 1.0f, -1.0f, 1.0f };
-	MainPassCB.lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+	MainPassCB.DeltaTime = timer.GetDeltaTime();
+	MainPassCB.TotalTime = timer.GetTotalTime();
+
+	MainPassCB.AspectRatio = (float)screenWidth / screenHeight;
+
+	MainPassCB.lights[0].Direction = { 1.0f, 0.0f, 0.0f };
+	MainPassCB.lights[0].Strength = { 0.7f, 0.7f, 0.7f };
 
 	auto currPassCB = currentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
@@ -1235,7 +1240,7 @@ void Game::BuildEntities()
 	gpuEmitterEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
-	systemData->SetTranslation(currentEntityIndex, -10.0f, 0.0f, 0.0f);
+	systemData->SetTranslation(currentEntityIndex, -100.0f, 0.0f, 0.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	gpuEmitterEntity->ObjCBIndex = currentObjCBIndex;
 	allEntities.push_back(std::move(gpuEmitterEntity));
@@ -1370,8 +1375,8 @@ void Game::BuildEntities()
 	{
 		auto enemyEntity1 = std::make_unique<EnemyEntity>();
 		enemyEntity1->SystemWorldIndex = currentEntityIndex;
-		systemData->SetScale(currentEntityIndex, 1.0f, 4.0f, 1.0f);
-		systemData->SetTranslation(currentEntityIndex, 75.0f, 2.0f, 20.0f);
+		systemData->SetScale(currentEntityIndex, 4.0f, 8.0f, 4.0f);
+		systemData->SetTranslation(currentEntityIndex, 75.0f, 4.0f, 20.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		enemyEntity1->ObjCBIndex = currentObjCBIndex;
 		enemyEntity1->Geo = Geometries["shapeGeo"].get();
@@ -1387,8 +1392,8 @@ void Game::BuildEntities()
 
 		auto enemyEntity2 = std::make_unique<EnemyEntity>();
 		enemyEntity2->SystemWorldIndex = currentEntityIndex;
-		systemData->SetScale(currentEntityIndex, 2.0f, 4.0f, 1.0f);
-		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 5.0f);
+		systemData->SetScale(currentEntityIndex, 4.0f, 8.0f, 4.0f);
+		systemData->SetTranslation(currentEntityIndex, 50.0f, 4.0f, 5.0f);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		enemyEntity2->ObjCBIndex = currentObjCBIndex;
 		enemyEntity2->Geo = Geometries["shapeGeo"].get();

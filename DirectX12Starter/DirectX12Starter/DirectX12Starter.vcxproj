@@ -163,6 +163,7 @@
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="GPUEmitter.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="KeyboardEvent.h" />
     <ClInclude Include="MathHelper.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="GPUEmitter.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Junkyard.cpp" />
     <ClCompile Include="KeyboardEvent.cpp" />
@@ -211,6 +213,33 @@
       <FileType>Document</FileType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </None>
+    <FxCompile Include="Resources\Shaders\CopyDrawCountComputeShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\DeadListInitComputeShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\EmitComputeShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\GPUParticleGeometryShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Geometry</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <None Include="Resources\Shaders\GPUParticleInclude.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <FxCompile Include="Resources\Shaders\GPUParticlePixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\GPUParticleVertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
     <FxCompile Include="Resources\Shaders\ParticlePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
@@ -229,6 +258,10 @@
     </FxCompile>
     <FxCompile Include="Resources\Shaders\SkyVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Resources\Shaders\UpdateComputeShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </FxCompile>
     <FxCompile Include="Resources\Shaders\VertexShader.hlsl">
