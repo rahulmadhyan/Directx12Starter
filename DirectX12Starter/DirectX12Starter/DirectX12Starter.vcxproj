@@ -174,7 +174,9 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemData.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="TSQueue.h" />
     <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="Waypoints.h" />
@@ -197,7 +199,9 @@
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="SystemData.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="TSQueue.cpp" />
     <ClCompile Include="Waypoints.cpp" />
   </ItemGroup>
   <ItemGroup>

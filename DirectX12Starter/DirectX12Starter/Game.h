@@ -14,6 +14,7 @@
 #include "Emitter.h"
 #include "Waypoints.h"
 #include "GPUEmitter.h"
+#include "ThreadPool.h"
 
 #ifdef _DEBUG
 #include <DirectXColors.h>
@@ -105,6 +106,8 @@ private:
 	Waypoints *waypoints;
 
 	GPUEmitter* gpuEmitter;
+
+	ThreadPool jobSystem;
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
