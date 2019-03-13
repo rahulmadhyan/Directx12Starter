@@ -169,6 +169,10 @@ bool Game::Initialize()
 	BuildConstantBufferViews();
 	BuildPSOs();
 
+	enemies->SetPlayerEntity(playerEntities[0]);
+	enemies->SetEnemyEntitites(enemyEntities);
+	enemies->SetWaypointEntitites(waypointEntities);
+
 	// execute the initialization commands
 	ThrowIfFailed(CommandList->Close());
 	ID3D12CommandList* cmdsLists[] = { CommandList.Get() };
@@ -252,7 +256,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	enemies->Update(timer, playerEntities[0], enemyEntities, waypointEntities);
+	enemies->Update(timer);
 
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();

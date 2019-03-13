@@ -1,9 +1,5 @@
 #include "Enemies.h"
 
-Enemies::Enemies()
-{
-}
-
 Enemies::Enemies(SystemData *systemData) : systemData(systemData)
 {
 
@@ -11,10 +7,26 @@ Enemies::Enemies(SystemData *systemData) : systemData(systemData)
 
 Enemies::~Enemies()
 {
+
+}
+
+void Enemies::SetPlayerEntity(Entity* playerEntity)
+{
+	this->playerEntity = playerEntity;
+}
+
+void Enemies::SetEnemyEntitites(std::vector<EnemyEntity*> enemyEntities)
+{
+	this->enemyEntities = enemyEntities;
+}
+
+void Enemies::SetWaypointEntitites(std::vector<Entity*> wayPointEntities)
+{
+	this->wayPointEntities = wayPointEntities;
 }
 
 // have the update function include waypoints vector
-void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints)
+void Enemies::Update(const Timer &timer)
 {
 	const float deltaTime = timer.GetDeltaTime();
 	//int currentWaypointIndex = 0;
@@ -41,7 +53,7 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 		XMStoreFloat(&distance, length);
 
 		// Waypoint calculation
-		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 4];
+		Entity* currentWaypoint = wayPointEntities[e->currentWaypointIndex % 4];
 		//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
 
 		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
