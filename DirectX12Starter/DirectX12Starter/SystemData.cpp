@@ -79,7 +79,7 @@ const XMFLOAT3* SystemData::GetUVs()
 	return uvs;
 }
 
-SubmeshGeometry SystemData::GetSubSystem(char* subSystemName) const
+SubmeshGeometry SystemData::GetSubSystem(const char* subSystemName) const
 {
 	return subSystemData.at(subSystemName);
 }
@@ -133,7 +133,7 @@ void SystemData::SetWorldMatrix(UINT worldIndex)
 		XMMatrixTranslation(currentWorldPosition.x, currentWorldPosition.y, currentWorldPosition.z));
 }
 
-void SystemData::LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName)
+void SystemData::LoadOBJFile(const char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device,const char* subSystemName)
 {
 	SubmeshGeometry newSubSystem;
 	newSubSystem.BaseVertexLocation = currentBaseVertexLocation;

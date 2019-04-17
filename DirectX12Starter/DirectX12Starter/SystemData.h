@@ -28,7 +28,7 @@ public:
 	const XMFLOAT3* GetNormals();
 	const XMFLOAT3* GetUVs();
 
-	SubmeshGeometry GetSubSystem(char* subSystemName) const;
+	SubmeshGeometry GetSubSystem(const char* subSystemName) const;
 
 	const XMFLOAT3* GetWorldPosition(UINT index);
 	const XMFLOAT3* GetWorldRotation(UINT index);
@@ -41,7 +41,7 @@ public:
 
 	void SetWorldMatrix(UINT worldIndex);
 
-	void LoadOBJFile(char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device, char* subSystemName);
+	void LoadOBJFile(const char* fileName, Microsoft::WRL::ComPtr<ID3D12Device> device,const char* subSystemName);
 
 private:
 	uint16_t currentBaseVertexLocation;
@@ -59,6 +59,6 @@ private:
 
 	XMFLOAT4X4* worldMatrices;
 
-	std::unordered_map<char*, SubmeshGeometry> subSystemData;
+	std::unordered_map<const char*, SubmeshGeometry> subSystemData;
 };
 

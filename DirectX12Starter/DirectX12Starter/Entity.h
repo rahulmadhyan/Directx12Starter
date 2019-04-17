@@ -51,3 +51,15 @@ struct EnemyEntity : public Entity
 	bool isRanged = false;
 	int currentWaypointIndex = 0;
 };
+
+struct EnemyUpdateEntity
+{
+	EnemyUpdateEntity(UINT _systemWorldIndex, UINT _currentWayPointIndex)
+	{
+		SystemWorldIndex = _systemWorldIndex;
+		CurrentWaypointIndex = _currentWayPointIndex;
+	}
+
+	UINT SystemWorldIndex = -1;
+	UINT CurrentWaypointIndex = 0;
+};

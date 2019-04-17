@@ -158,6 +158,9 @@ bool Game::Initialize()
 		XMFLOAT4(0.5f, 0.5f, 0.5f, 0.5f)
 	);
 
+	levelSize = 500;
+	numberEnemies = 1000;
+
 	BuildTextures();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
@@ -315,7 +318,7 @@ void Game::Draw(const Timer &timer)
 	DrawEntities(CommandList.Get(), playerEntities);
 	DrawEntities(CommandList.Get(), sceneEntities);
 	DrawEntities(CommandList.Get(), enemyEntities);
-	//DrawEntities(CommandList.Get(), waypointEntities);
+	DrawEntities(CommandList.Get(), waypointEntities);
 	
 	CommandList->SetPipelineState(PSOs["sky"].Get());
 	DrawEntities(CommandList.Get(), skyEntities);
@@ -323,7 +326,7 @@ void Game::Draw(const Timer &timer)
 	CommandList->SetPipelineState(PSOs["emitter"].Get());
 	DrawEntities(CommandList.Get(), emitterEntities);
 
-	DrawGPUParticles(CommandList.Get());
+	//DrawGPUParticles(CommandList.Get());
 
 #ifdef _DEBUG
 	DebugDraw(CommandList.Get(), playerEntities);
@@ -1272,7 +1275,7 @@ void Game::BuildEntities()
 		auto sceneEntity1 = std::make_unique<Entity>();
 		sceneEntity1->SystemWorldIndex = currentEntityIndex;
 		systemData->SetTranslation(currentEntityIndex, 0.0f, 0.0f, 0.0f);
-		systemData->SetScale(currentEntityIndex, 20.0f, 0.25f, 20.0f);
+		systemData->SetScale(currentEntityIndex, levelSize, 0.25f, levelSize);
 		systemData->SetWorldMatrix(currentEntityIndex);
 		sceneEntity1->ObjCBIndex = currentObjCBIndex;
 		sceneEntity1->Geo = Geometries["shapeGeo"].get();
@@ -1284,7 +1287,7 @@ void Game::BuildEntities()
 		currentEntityIndex++;
 		currentObjCBIndex++;
 
-		auto sceneEntity2 = std::make_unique<Entity>();
+		/*auto sceneEntity2 = std::make_unique<Entity>();
 		sceneEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetTranslation(currentEntityIndex, 25.0f, 0.0f, 5.0f);
 		systemData->SetScale(currentEntityIndex, 30.0f, 0.25f, 5.0f);
@@ -1372,29 +1375,34 @@ void Game::BuildEntities()
 		allEntities.push_back(std::move(sceneEntity7));
 		sceneEntities.push_back(allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;
+		currentObjCBIndex++;*/
 	}
 
 	// enemy entities
 	{
-		auto enemyEntity1 = std::make_unique<EnemyEntity>();
-		enemyEntity1->SystemWorldIndex = currentEntityIndex;
-		systemData->SetScale(currentEntityIndex, 4.0f, 8.0f, 4.0f);
-		systemData->SetTranslation(currentEntityIndex, 75.0f, 4.0f, 20.0f);
-		systemData->SetWorldMatrix(currentEntityIndex);
-		enemyEntity1->ObjCBIndex = currentObjCBIndex;
-		enemyEntity1->Geo = Geometries["shapeGeo"].get();
-		enemyEntity1->Mat = Materials["demo1"].get();
-		enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["Cylinder"];
-		enemyEntity1->isRanged = false;
-		enemyEntity1->currentWaypointIndex = 0;
-		allEntities.push_back(std::move(enemyEntity1));
-		enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
-		currentEntityIndex++;
-		currentObjCBIndex++;
-
-		auto enemyEntity2 = std::make_unique<EnemyEntity>();
+		srand(time(NULL));
+		for (uint32_t i = 0; i < numberEnemies; i++)
+		{
+			int32_t randomTranslation = rand() % levelSize / 2;
+			auto enemyEntity1 = std::make_unique<EnemyEntity>();
+			enemyEntity1->SystemWorldIndex = currentEntityIndex;
+			systemData->SetScale(currentEntityIndex, 4.0f, 8.0f, 4.0f);
+			systemData->SetTranslation(currentEntityIndex, randomTranslation, 4.0f, randomTranslation);
+			systemData->SetWorldMatrix(currentEntityIndex);
+			enemyEntity1->ObjCBIndex = currentObjCBIndex;
+			enemyEntity1->Geo = Geometries["shapeGeo"].get();
+			enemyEntity1->Mat = Materials["demo1"].get();
+			enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["Cylinder"];
+			enemyEntity1->isRanged = false;
+			enemyEntity1->currentWaypointIndex = 0;
+			allEntities.push_back(std::move(enemyEntity1));
+			enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
+			currentEntityIndex++;
+			currentObjCBIndex++;
+		}
+		
+		/*auto enemyEntity2 = std::make_unique<EnemyEntity>();
 		enemyEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 4.0f, 8.0f, 4.0f);
 		systemData->SetTranslation(currentEntityIndex, 50.0f, 4.0f, 5.0f);
@@ -1409,7 +1417,7 @@ void Game::BuildEntities()
 		allEntities.push_back(std::move(enemyEntity2));
 		enemyEntities.push_back((EnemyEntity*)allEntities[currentEntityIndex].get());
 		currentEntityIndex++;
-		currentObjCBIndex++;
+		currentObjCBIndex++;*/
 
 		/*auto enemyEntity3 = std::make_unique<EnemyEntity>();
 		enemyEntity3->SystemWorldIndex = currentEntityIndex;
@@ -1449,7 +1457,7 @@ void Game::BuildEntities()
 		auto waypointEntity1 = std::make_unique<Entity>();
 		waypointEntity1->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, (float)(levelSize / 2), 2.0f, (float)(levelSize / 2));
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity1->ObjCBIndex = currentObjCBIndex;
 		waypointEntity1->Geo = Geometries["shapeGeo"].get();
@@ -1464,7 +1472,7 @@ void Game::BuildEntities()
 		auto waypointEntity2 = std::make_unique<Entity>();
 		waypointEntity2->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 50.0f, 2.0f, 0.0f);
+		systemData->SetTranslation(currentEntityIndex, (float)-(levelSize / 2), 2.0f, (float)(levelSize / 2));
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity2->ObjCBIndex = currentObjCBIndex;
 		waypointEntity2->Geo = Geometries["shapeGeo"].get();
@@ -1479,7 +1487,7 @@ void Game::BuildEntities()
 		auto waypointEntity3 = std::make_unique<Entity>();
 		waypointEntity3->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 70.0f, 2.0f, 30.0f);
+		systemData->SetTranslation(currentEntityIndex, (float)-(levelSize / 2), 2.0f, (float)-(levelSize / 2));
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity3->ObjCBIndex = currentObjCBIndex;
 		waypointEntity3->Geo = Geometries["shapeGeo"].get();
@@ -1494,7 +1502,7 @@ void Game::BuildEntities()
 		auto waypointEntity4 = std::make_unique<Entity>();
 		waypointEntity4->SystemWorldIndex = currentEntityIndex;
 		systemData->SetScale(currentEntityIndex, 5.0f, 5.0f, 5.0f);
-		systemData->SetTranslation(currentEntityIndex, 70.0f, 2.0f, 0.0f);
+		systemData->SetTranslation(currentEntityIndex, (float)(levelSize / 2), 2.0f, (float)-(levelSize / 2));
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity4->ObjCBIndex = currentObjCBIndex;
 		waypointEntity4->Geo = Geometries["shapeGeo"].get();

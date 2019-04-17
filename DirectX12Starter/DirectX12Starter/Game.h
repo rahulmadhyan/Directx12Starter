@@ -107,7 +107,8 @@ private:
 
 	GPUEmitter* gpuEmitter;
 
-	ThreadPool jobSystem;
+	int32_t levelSize = 0;
+	uint32_t numberEnemies = 0;
 
 	float mSunTheta = 1.25f * XM_PIDIV2;
 	float mSunPhi = XM_PIDIV4;
