@@ -194,7 +194,7 @@ void Game::Update(const Timer &timer)
 	inputManager->UpdateController();
 
 	player->Update(timer, playerEntities[0], enemyEntities);
-	enemies->Update(timer, playerEntities[0], enemyEntities, waypointEntities);
+	enemies->Update2(timer, playerEntities[0], enemyEntities, waypointEntities);
 	
 	//update emitter vertex buffer
 	auto currentEmitterVB = currentFrameResource->emitterVB.get();

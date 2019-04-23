@@ -50,4 +50,10 @@ struct EnemyEntity : public Entity
 {
 	bool isRanged = false;
 	int currentWaypointIndex = 0;
+
+	float distanceToPlayer = 0.0f;
+	float distanceToWaypoint = 0.0f;
+
+	XMFLOAT3 diffVectorNormal;
+	XMFLOAT3 diffWayPointVecNormal;
 };

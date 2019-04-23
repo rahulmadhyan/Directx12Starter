@@ -94,3 +94,66 @@ void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<Enemy
 		}
 	}
 }
+
+void Enemies::Update2(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints)
+{
+	const float deltaTime = timer.GetDeltaTime();
+
+	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
+
+	for (auto e : enemyEntities)
+	{
+		XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
+		XMVECTOR differenceVector = XMVectorSubtract(playerPosition, enemyPosition);
+		XMVECTOR length = XMVector3Length(differenceVector);
+
+		XMVECTOR normalDifferenceVector = XMVector3Normalize(differenceVector);
+
+		XMStoreFloat3(&e->diffVectorNormal, normalDifferenceVector);
+		XMStoreFloat(&e->distanceToPlayer, length);
+	}
+
+	for (auto e : enemyEntities)
+	{
+		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 4];
+		
+		XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
+		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
+		XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
+		XMVECTOR waypointLength = XMVector3Length(differenceWaypointVector);
+
+		XMVECTOR normaldifferenceWaypointVector = XMVector3Normalize(differenceWaypointVector);
+
+		XMStoreFloat3(&e->diffWayPointVecNormal, normaldifferenceWaypointVector);
+		XMStoreFloat(&e->distanceToWaypoint, waypointLength);
+	}
+
+	for (auto e : enemyEntities)
+	{
+		XMVECTOR normalDifferenceVector = XMLoadFloat3(&e->diffVectorNormal);
+		XMVECTOR normaldifferenceWaypointVector = XMLoadFloat3(&e->diffWayPointVecNormal);
+
+		if (!e->isRanged)
+		{
+			if (e->distanceToPlayer < 20.0f && e->distanceToPlayer > 1.0f)
+			{
+				systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
+				systemData->SetWorldMatrix(e->SystemWorldIndex);
+
+				e->NumFramesDirty = gNumberFrameResources;
+			}
+			else if (e->distanceToWaypoint > 1.0f)
+			{
+				// patrol waypoints
+				systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f, 0.0f, XMVectorGetZ(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f);
+				systemData->SetWorldMatrix(e->SystemWorldIndex);
+
+				e->NumFramesDirty = gNumberFrameResources;
+			}
+			else if (e->distanceToWaypoint < 1.0f)
+			{
+				e->currentWaypointIndex++;
+			}
+		}
+	}
+}
