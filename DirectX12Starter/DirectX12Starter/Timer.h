@@ -10,13 +10,14 @@ public:
 	~Timer();
 
 	const float& GetDeltaTime() const;
+	const float& GetTotalTime() const;
 
 	void UpdateTimer();
 	void UpdateTitleBarStats();
 
 private:
 	double perfCounterSeconds;
-	
+
 	float totalTime;
 	float deltaTime;
 
@@ -30,4 +31,3 @@ private:
 	HWND hwnd;
 	LPCTSTR windowTitle;
 };
-

@@ -1,97 +1,136 @@
 #include "Enemies.h"
 
-Enemies::Enemies()
-{
-}
-
 Enemies::Enemies(SystemData *systemData) : systemData(systemData)
 {
-
+	const unsigned int threadCount = std::thread::hardware_concurrency();
+	//jobSystem1.Start(threadCount);
 }
 
 Enemies::~Enemies()
 {
+
 }
 
-// have the update function include waypoints vector
-void Enemies::Update(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints)
+void Enemies::SetPlayerEntity(Entity* playerEntity)
 {
-	const float deltaTime = timer.GetDeltaTime();
-	//int currentWaypointIndex = 0;
+	this->playerEntity = playerEntity;
+}
 
-	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
+void Enemies::SetEnemyEntitites(std::vector<EnemyEntity*> enemyEntities)
+{
+	this->enemyEntities = enemyEntities;
 
 	for (auto e : enemyEntities)
 	{
-		XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
-		XMVECTOR differenceVector = XMVectorSubtract(playerPosition, enemyPosition);
-		XMVECTOR length = XMVector3Length(differenceVector);
+		this->enemyUpdateEntities.emplace_back(new EnemyUpdateEntity(e->SystemWorldIndex, e->currentWaypointIndex));
+	}
 
-		const XMFLOAT3* enemyRotation = systemData->GetWorldRotation(e->SystemWorldIndex);
-		XMVECTOR enemyRotationVector = XMLoadFloat3(enemyRotation);
-		//XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	size_t threadCount = std::thread::hardware_concurrency();
+	size_t enemiesPerThread = enemyUpdateEntities.size() / threadCount;
 
-		XMVECTOR normalDifferenceVector = XMVector3Normalize(differenceVector);
+	for (size_t i = 0; i < threadCount; i++)
+	{
+		auto start_itr = std::next(enemyUpdateEntities.begin(), i * enemiesPerThread);
+		auto end_itr = std::next(enemyUpdateEntities.begin(), (i * enemiesPerThread) + enemiesPerThread);
+		
+		std::vector<EnemyUpdateEntity*> currentEnemies(enemiesPerThread);
 
-		XMVECTOR rotation = XMVectorSubtractAngles(differenceVector, enemyRotationVector);
+		std::copy(start_itr, end_itr, currentEnemies.begin());
 
-		XMMATRIX rotMatrix = XMMatrixRotationRollPitchYaw(0.0f, enemyRotation->y, 0.0f);
+		listEnemies.push_back(currentEnemies);
+	}
+}
 
-		float distance = 0.0f;
-		XMStoreFloat(&distance, length);
+void Enemies::SetWaypointEntitites(std::vector<Entity*> wayPointEntities)
+{
+	this->wayPointEntities = wayPointEntities;
+}
 
-		// Waypoint calculation
-		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 4];
-		//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
+// have the update function include waypoints vector
+void Enemies::Update(const Timer &timer)
+{
+	deltaTime = timer.GetDeltaTime();
 
-		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
-		XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
-		XMVECTOR waypointLength = XMVector3Length(differenceWaypointVector);
+	for (auto e : enemyUpdateEntities)
+	{
+		UpdateEnemy(e);
+	}
 
-		XMVECTOR normaldifferenceWaypointVector = XMVector3Normalize(differenceWaypointVector);
+	/*for (size_t i = 0; i < listEnemies.size(); i++)
+	{
+		jobSystem1.Submit([=] {
+			UpdateEnemies(std::ref(listEnemies[i]));
+		});
+	}*/
 
-		float distanceToWaypoint = 0.0f;
-		XMStoreFloat(&distanceToWaypoint, waypointLength);
+	for (auto e : enemyEntities)
+	{
+		e->NumFramesDirty = gNumberFrameResources;
+	}
+}
 
-		if (e->isRanged && distance < 20.0f)
-		{
-			// look at
-			XMVECTOR newPosition = XMVector3Transform(enemyPosition, rotMatrix);
+void Enemies::UpdateEnemies(std::vector<EnemyUpdateEntity*> enemyEntities)
+{
+	for (auto e : enemyEntities)
+	{
+		UpdateEnemy(e);
+	}
+}
 
-			XMFLOAT3 rangedEnemyPos;
-			XMStoreFloat3(&rangedEnemyPos, newPosition);
+void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
+{
+	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
+	XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
+	XMVECTOR differenceVector = XMVectorSubtract(playerPosition, enemyPosition);
+	XMVECTOR length = XMVector3Length(differenceVector);
 
-			systemData->SetRotation(e->SystemWorldIndex, 0.0f, rangedEnemyPos.y, 0.0f); 			
-			systemData->SetWorldMatrix(e->SystemWorldIndex);
+	const XMFLOAT3* enemyRotation = systemData->GetWorldRotation(e->SystemWorldIndex);
+	XMVECTOR enemyRotationVector = XMLoadFloat3(enemyRotation);
+	//XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
-			e->NumFramesDirty = gNumberFrameResources;
-			
-			// fire
-		}
-		else if(!e->isRanged)
-		{
-			if (distance < 20.0f && distance > 1.0f)
-			{
-				systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
-				systemData->SetWorldMatrix(e->SystemWorldIndex);
+	XMVECTOR normalDifferenceVector = XMVector3Normalize(differenceVector);
 
-				e->NumFramesDirty = gNumberFrameResources;
+	XMVECTOR rotation = XMVectorSubtractAngles(differenceVector, enemyRotationVector);
 
-				// fire or attack
-			}
-			else if(distanceToWaypoint > 1.0f)
-			{
-				// patrol waypoints
-				systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f, 0.0f, XMVectorGetZ(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f);
-				systemData->SetWorldMatrix(e->SystemWorldIndex);
+	XMMATRIX rotMatrix = XMMatrixRotationRollPitchYaw(0.0f, enemyRotation->y, 0.0f);
 
-				e->NumFramesDirty = gNumberFrameResources;
-			}
-			else if (distanceToWaypoint < 1.0f)
-			{
-				e->currentWaypointIndex++;
-			}
-		}
+	float distance = 0.0f;
+	XMStoreFloat(&distance, length);
+
+	// Waypoint calculation
+	Entity* currentWaypoint = wayPointEntities[e->CurrentWaypointIndex % 4];
+	//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
+
+	XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
+	XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
+	XMVECTOR waypointLength = XMVector3Length(differenceWaypointVector);
+
+	XMVECTOR normaldifferenceWaypointVector = XMVector3Normalize(differenceWaypointVector);
+
+	float distanceToWaypoint = 0.0f;
+	XMStoreFloat(&distanceToWaypoint, waypointLength);
+
+	//if (distance < 20.0f && distance > 1.0f)
+	//{
+	//	systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
+	//	systemData->SetWorldMatrix(e->SystemWorldIndex);
+
+	//	e->NumFramesDirty = gNumberFrameResources;
+
+	//	// fire or attack
+	//}
+	if (distanceToWaypoint > 3.0f)
+	{
+		// patrol waypoints
+
+		systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f, 0.0f, XMVectorGetZ(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f);
+		systemData->SetWorldMatrix(e->SystemWorldIndex);
+
+		//e->NumFramesDirty = gNumberFrameResources;
+	}
+	else if (distanceToWaypoint < 3.0f)
+	{
+		e->CurrentWaypointIndex++;
 	}
 }
 

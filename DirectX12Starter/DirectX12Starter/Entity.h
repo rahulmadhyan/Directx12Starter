@@ -56,4 +56,17 @@ struct EnemyEntity : public Entity
 
 	XMFLOAT3 diffVectorNormal;
 	XMFLOAT3 diffWayPointVecNormal;
+
+};
+
+struct EnemyUpdateEntity
+{
+	EnemyUpdateEntity(UINT _systemWorldIndex, UINT _currentWayPointIndex)
+	{
+		SystemWorldIndex = _systemWorldIndex;
+		CurrentWaypointIndex = _currentWayPointIndex;
+	}
+
+	UINT SystemWorldIndex = -1;
+	UINT CurrentWaypointIndex = 0;
 };
