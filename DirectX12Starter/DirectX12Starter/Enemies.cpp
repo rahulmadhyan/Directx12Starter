@@ -51,10 +51,12 @@ void Enemies::Update(const Timer &timer)
 {
 	deltaTime = timer.GetDeltaTime();
 
-	for (auto e : enemyUpdateEntities)
+	/*for (auto e : enemyUpdateEntities)
 	{
 		UpdateEnemy(e);
-	}
+	}*/
+
+	Update2();
 
 	/*for (size_t i = 0; i < listEnemies.size(); i++)
 	{
@@ -63,18 +65,20 @@ void Enemies::Update(const Timer &timer)
 		});
 	}*/
 
-	for (auto e : enemyEntities)
+	/*for (auto e : enemyEntities)
 	{
 		e->NumFramesDirty = gNumberFrameResources;
-	}
+	}*/
 }
 
 void Enemies::UpdateEnemies(std::vector<EnemyUpdateEntity*> enemyEntities)
 {
-	for (auto e : enemyEntities)
+	/*for (auto e : enemyEntities)
 	{
 		UpdateEnemy(e);
-	}
+	}*/
+
+	Update2();
 }
 
 void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
@@ -134,10 +138,8 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 	}
 }
 
-void Enemies::Update2(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints)
+void Enemies::Update2()
 {
-	const float deltaTime = timer.GetDeltaTime();
-
 	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
 
 	for (auto e : enemyEntities)
@@ -154,7 +156,7 @@ void Enemies::Update2(const Timer &timer, Entity* playerEntity, std::vector<Enem
 
 	for (auto e : enemyEntities)
 	{
-		Entity* currentWaypoint = waypoints[e->currentWaypointIndex % 4];
+		Entity* currentWaypoint = wayPointEntities[e->currentWaypointIndex % 4];
 		
 		XMVECTOR enemyPosition = XMLoadFloat3(systemData->GetWorldPosition(e->SystemWorldIndex));
 		XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
@@ -194,5 +196,10 @@ void Enemies::Update2(const Timer &timer, Entity* playerEntity, std::vector<Enem
 				e->currentWaypointIndex++;
 			}
 		}
+	}
+
+	for (auto e : enemyEntities)
+	{
+		e->NumFramesDirty = gNumberFrameResources;
 	}
 }

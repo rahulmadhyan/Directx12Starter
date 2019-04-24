@@ -159,7 +159,7 @@ bool Game::Initialize()
 	);
 
 	levelSize = 500;
-	numberEnemies = 1000;
+	numberEnemies = 100;
 
 	BuildTextures();
 	BuildRootSignature();
@@ -185,49 +185,49 @@ bool Game::Initialize()
 	FlushCommandQueue();
 	
 	// gpu particle init
-	ThrowIfFailed(CommandListAllocator->Reset());
+	//ThrowIfFailed(CommandListAllocator->Reset());
 
-	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["particleDeadList"].Get()));
+	//ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["particleDeadList"].Get()));
 
-	CommandList->SetComputeRootSignature(rootSignature.Get());
+	//CommandList->SetComputeRootSignature(rootSignature.Get());
 
-	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
-	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
+	//currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
+	//currentFrameResource = FrameResources[currentFrameResourceIndex].get();
 
-	UpdateMainPassCB(timer);
-	UpadteGPUParticleCBs(timer);
+	//UpdateMainPassCB(timer);
+	//UpadteGPUParticleCBs(timer);
 
-	ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
+	//ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
+	//CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
 
-	int passCbvIndex = PassCbvOffset + currentFrameResourceIndex;
-	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
-	CommandList->SetComputeRootDescriptorTable(1, passCbvHandle);
+	//int passCbvIndex = PassCbvOffset + currentFrameResourceIndex;
+	//auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	//passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
+	//CommandList->SetComputeRootDescriptorTable(1, passCbvHandle);
 
-	int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
-	auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-	gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
-	CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
+	//int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
+	//auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	//gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
+	//CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	//ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
+	//CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	CommandList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
 
-	CommandList->Dispatch(gpuEmitter->GetMaxParticles(), 1, 1);
+	//CommandList->Dispatch(gpuEmitter->GetMaxParticles(), 1, 1);
 
-	ThrowIfFailed(CommandList->Close());
+	//ThrowIfFailed(CommandList->Close());
 
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists1[] = { CommandList.Get() };
-	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists1);
+	//// Add the command list to the queue for execution.
+	//ID3D12CommandList* cmdsLists1[] = { CommandList.Get() };
+	//CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists1);
 
-	// Wait for the work to finish.
-	FlushCommandQueue();
+	//// Wait for the work to finish.
+	//FlushCommandQueue();
 
 	return true;
 }

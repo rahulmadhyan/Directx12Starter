@@ -9,7 +9,7 @@ public:
 	Enemies(SystemData *systemData);
 	~Enemies();
 
-	void Update2(const Timer &timer, Entity* playerEntity, std::vector<EnemyEntity*> enemyEntities, std::vector<Entity*> waypoints);
+	void Update2();
 
 	void SetPlayerEntity(Entity* playerEntity);
 	void SetEnemyEntitites(std::vector<EnemyEntity*> enemyEntities);
