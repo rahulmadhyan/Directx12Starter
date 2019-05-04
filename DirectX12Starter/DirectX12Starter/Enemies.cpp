@@ -3,7 +3,7 @@
 Enemies::Enemies(SystemData *systemData) : systemData(systemData)
 {
 	const unsigned int threadCount = std::thread::hardware_concurrency();
-	//jobSystem1.Start(threadCount);
+	jobSystem1.Start(threadCount);
 }
 
 Enemies::~Enemies()
@@ -51,17 +51,17 @@ void Enemies::Update(const Timer &timer)
 {
 	deltaTime = timer.GetDeltaTime();
 
-	for (auto e : enemyUpdateEntities)
+	/*for (auto e : enemyUpdateEntities)
 	{
 		UpdateEnemy(e);
-	}
+	}*/
 
-	/*for (size_t i = 0; i < listEnemies.size(); i++)
+	for (size_t i = 0; i < listEnemies.size(); i++)
 	{
-		jobSystem1.Submit([=] {
+		jobSystem1.Submit([ = ] {
 			UpdateEnemies(std::ref(listEnemies[i]));
 		});
-	}*/
+	}
 
 	for (auto e : enemyEntities)
 	{

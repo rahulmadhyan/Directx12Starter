@@ -159,7 +159,7 @@ bool Game::Initialize()
 	);
 
 	levelSize = 500;
-	numberEnemies = 1000;
+	numberEnemies = 100;
 
 	BuildTextures();
 	BuildRootSignature();
@@ -1247,7 +1247,7 @@ void Game::BuildEntities()
 	gpuEmitterEntity->SystemWorldIndex = currentEntityIndex;
 	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
 	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
-	systemData->SetTranslation(currentEntityIndex, -100.0f, 0.0f, 0.0f);
+	systemData->SetTranslation(currentEntityIndex, -200.0f, 25.0f, 25.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	gpuEmitterEntity->ObjCBIndex = currentObjCBIndex;
 	allEntities.push_back(std::move(gpuEmitterEntity));
@@ -1256,9 +1256,9 @@ void Game::BuildEntities()
 
 	auto playerEntity = std::make_unique<Entity>();
 	playerEntity->SystemWorldIndex = currentEntityIndex;
-	systemData->SetScale(currentEntityIndex, 1.0f, 1.0f, 1.0f);
+	systemData->SetScale(currentEntityIndex, 2.0f, 2.0f, 2.0f);
 	systemData->SetRotation(currentEntityIndex, 0, 0, 0);
-	systemData->SetTranslation(currentEntityIndex, 3.0f, 2.0f, 0.0f);
+	systemData->SetTranslation(currentEntityIndex, 3.0f, 1.0f, 0.0f);
 	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
