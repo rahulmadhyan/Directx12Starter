@@ -13,12 +13,23 @@ cbuffer cbPass : register(b1)
 {
 	float4x4 view;
 	float4x4 proj;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+
 	float3 eyePosW;
 	float cbPerObjectPad1;
-	float4 ambientLight;
-	float deltaTime;
-	float totalTime;
+
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+
 	float aspectRatio;
+	float farZ;
+	float totalTime;
+	float deltaTime;
+
+	float4 ambientLight;
 
 	Light lights[MaxLights];
 }

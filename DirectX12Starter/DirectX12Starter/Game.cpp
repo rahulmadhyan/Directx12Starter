@@ -158,8 +158,8 @@ bool Game::Initialize()
 		XMFLOAT4(0.5f, 0.5f, 0.5f, 0.5f)
 	);
 
-	levelSize = 500;
-	numberEnemies = 100;
+	levelSize = 150;
+	numberEnemies = 40;
 
 	BuildTextures();
 	BuildRootSignature();
@@ -185,49 +185,49 @@ bool Game::Initialize()
 	FlushCommandQueue();
 	
 	// gpu particle init
-	ThrowIfFailed(CommandListAllocator->Reset());
+	//ThrowIfFailed(CommandListAllocator->Reset());
 
-	ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["particleDeadList"].Get()));
+	//ThrowIfFailed(CommandList->Reset(CommandListAllocator.Get(), PSOs["particleDeadList"].Get()));
 
-	CommandList->SetComputeRootSignature(rootSignature.Get());
+	//CommandList->SetComputeRootSignature(rootSignature.Get());
 
-	currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
-	currentFrameResource = FrameResources[currentFrameResourceIndex].get();
+	//currentFrameResourceIndex = (currentFrameResourceIndex + 1) % gNumberFrameResources;
+	//currentFrameResource = FrameResources[currentFrameResourceIndex].get();
 
-	UpdateMainPassCB(timer);
-	UpadteGPUParticleCBs(timer);
+	//UpdateMainPassCB(timer);
+	//UpadteGPUParticleCBs(timer);
 
-	ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
+	//ID3D12DescriptorHeap* objDescriptorHeaps[] = { CBVHeap.Get() };
+	//CommandList->SetDescriptorHeaps(_countof(objDescriptorHeaps), objDescriptorHeaps);
 
-	int passCbvIndex = PassCbvOffset + currentFrameResourceIndex;
-	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-	passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
-	CommandList->SetComputeRootDescriptorTable(1, passCbvHandle);
+	//int passCbvIndex = PassCbvOffset + currentFrameResourceIndex;
+	//auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	//passCbvHandle.Offset(passCbvIndex, CBVSRVUAVDescriptorSize);
+	//CommandList->SetComputeRootDescriptorTable(1, passCbvHandle);
 
-	int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
-	auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
-	gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
-	CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
+	//int gpuParticleCBVIndex = GPUParticleCBVOffset + currentFrameResourceIndex;
+	//auto gpuParticleCBVHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(CBVHeap->GetGPUDescriptorHandleForHeapStart());
+	//gpuParticleCBVHandle.Offset(gpuParticleCBVIndex, CBVSRVUAVDescriptorSize);
+	//CommandList->SetComputeRootDescriptorTable(4, gpuParticleCBVHandle);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
-	CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	//ID3D12DescriptorHeap* descriptorHeaps[] = { GPUParticleSRVUAVHeap.Get() };
+	//CommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
-	CommandList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
-	CommandList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(7, GPUParticleResources["ParticlePool"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(8, GPUParticleResources["DeadList"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(9, GPUParticleResources["DrawList"]->GPUAVHandle);
+	//CommandList->SetComputeRootDescriptorTable(10, GPUParticleResources["DrawArgs"]->GPUAVHandle);
 
-	CommandList->Dispatch(gpuEmitter->GetMaxParticles(), 1, 1);
+	//CommandList->Dispatch(gpuEmitter->GetMaxParticles(), 1, 1);
 
-	ThrowIfFailed(CommandList->Close());
+	//ThrowIfFailed(CommandList->Close());
 
-	// Add the command list to the queue for execution.
-	ID3D12CommandList* cmdsLists1[] = { CommandList.Get() };
-	CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists1);
+	//// Add the command list to the queue for execution.
+	//ID3D12CommandList* cmdsLists1[] = { CommandList.Get() };
+	//CommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists1);
 
-	// Wait for the work to finish.
-	FlushCommandQueue();
+	//// Wait for the work to finish.
+	//FlushCommandQueue();
 
 	return true;
 }
@@ -273,7 +273,7 @@ void Game::Update(const Timer &timer)
 	emitterEntities[0]->Geo->VertexBufferGPU = currentEmitterVB->Resource();
 
 	// gpu particle update
-	gpuEmitter->Update(timer.GetTotalTime(), timer.GetDeltaTime());
+	//gpuEmitter->Update(timer.GetTotalTime(), timer.GetDeltaTime());
 
 	UpdateObjectCBs(timer);
 	UpdateMainPassCB(timer);
@@ -395,16 +395,34 @@ void Game::UpdateMainPassCB(const Timer &timer)
 	XMStoreFloat4x4(&MainPassCB.Proj, XMMatrixTranspose(projection));
 
 	MainPassCB.CameraPosition = mainCamera.GetCameraPosition();
-	MainPassCB.ambientLight = XMFLOAT4(0.2f, 0.2f, 0.2f, 0.5f);
 
 	MainPassCB.DeltaTime = timer.GetDeltaTime();
 	MainPassCB.TotalTime = timer.GetTotalTime();
 
 	MainPassCB.AspectRatio = (float)screenWidth / screenHeight;
 
-	MainPassCB.lights[0].Direction = { 1.0f, 0.0f, 0.0f };
+	MainPassCB.AmbientLight = { 0.5f, 0.5f, 0.5f, 1.0f };
+
+	//directional light
+	MainPassCB.lights[0].Direction = { 1.0f, 0.0f, 1.0f };
 	MainPassCB.lights[0].Strength = { 0.7f, 0.7f, 0.7f };
 
+	//directional light
+	MainPassCB.lights[1].Direction = { 0.0f, -1.0f, 0.0f };
+	MainPassCB.lights[1].Strength = { 0.7f, 0.7f, 0.7f };
+
+	//point light
+	MainPassCB.lights[2].Position = { 0.0f, 0.0f, 0.0f };
+	MainPassCB.lights[2].Strength = { 0.0f, 10.0f, 0.0f };
+	MainPassCB.lights[2].FalloffStart = 0.0f;
+	MainPassCB.lights[2].FalloffEnd = 100.0f;
+
+	MainPassCB.lights[3].Strength = { 0.0f, 0.0f, 10.0f };
+	MainPassCB.lights[3].Direction = { 0.0f, 1.0f, 0.0f };
+	MainPassCB.lights[3].FalloffStart = 0.0f;
+	MainPassCB.lights[3].FalloffEnd = 100.0f;
+	MainPassCB.lights[3].SpotPower = 100.0f;
+	
 	auto currPassCB = currentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);
 }
@@ -454,7 +472,7 @@ void Game::BuildTextures()
 {
 	auto demo1Texture = std::make_unique<Texture>();
 	demo1Texture->Name = "1";
-	demo1Texture->Filename = L"Resources/Textures/Demo1.dds";
+	demo1Texture->Filename = L"Resources/Textures/yellow.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo1Texture->Filename.c_str(),
 		demo1Texture->Resource,
@@ -464,7 +482,7 @@ void Game::BuildTextures()
 
 	auto demo2Texture = std::make_unique<Texture>();
 	demo2Texture->Name = "2";
-	demo2Texture->Filename = L"Resources/Textures/Demo2.dds";
+	demo2Texture->Filename = L"Resources/Textures/Green.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), demo2Texture->Filename.c_str(),
 		demo2Texture->Resource,
@@ -483,7 +501,7 @@ void Game::BuildTextures()
 	Textures[emitterTexture->Name] = std::move(emitterTexture);
 
 	auto cubeMapTexture = std::make_unique<Texture>();
-	cubeMapTexture->Name = "4";
+	cubeMapTexture->Name = "Cube";
 	cubeMapTexture->Filename = L"Resources/Textures/PurpleCube.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
 		CommandList.Get(), cubeMapTexture->Filename.c_str(),
@@ -491,6 +509,26 @@ void Game::BuildTextures()
 		cubeMapTexture->UploadHeap));
 
 	CubeMapTextures[cubeMapTexture->Name] = std::move(cubeMapTexture);
+
+	auto waypoint = std::make_unique<Texture>();
+	waypoint->Name = "4";
+	waypoint->Filename = L"Resources/Textures/Box.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), waypoint->Filename.c_str(),
+		waypoint->Resource,
+		waypoint->UploadHeap));
+
+	Textures[waypoint->Name] = std::move(waypoint);
+
+	auto scene = std::make_unique<Texture>();
+	scene->Name = "5";
+	scene->Filename = L"Resources/Textures/Scene.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(Device.Get(),
+		CommandList.Get(), scene->Filename.c_str(),
+		scene->Resource,
+		scene->UploadHeap));
+
+	Textures[scene->Name] = std::move(scene);
 
 	// gpu particle resources
 	auto particlePoolResource = std::make_unique<GPUParticleTexture>();
@@ -1043,8 +1081,7 @@ void Game::BuildPSOs()
 	particleBlendState.AlphaToCoverageEnable = false;
 	particleBlendState.IndependentBlendEnable = false;
 	particleBlendState.RenderTarget[0].BlendEnable = true;
-	particleBlendState.RenderTarget[0].BlendOp =
-		particleBlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	particleBlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
 	particleBlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
 	particleBlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
 	particleBlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
@@ -1198,8 +1235,8 @@ void Game::BuildFrameResources()
 void Game::BuildMaterials()
 {
 	auto demo1Material = std::make_unique<Material>();
-	demo1Material->Name = "demo1";
-	demo1Material->MatCBIndex = 0;
+	demo1Material->Name = "Red";
+	demo1Material->MatCBIndex = 1;
 	demo1Material->DiffuseSrvHeapIndex = 0;
 	demo1Material->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	demo1Material->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
@@ -1208,14 +1245,34 @@ void Game::BuildMaterials()
 	Materials[demo1Material->Name] = std::move(demo1Material);
 
 	auto demo2Material = std::make_unique<Material>();
-	demo2Material->Name = "demo2";
-	demo2Material->MatCBIndex = 1;
+	demo2Material->Name = "Green";
+	demo2Material->MatCBIndex = 0;
 	demo2Material->DiffuseSrvHeapIndex = 1;
 	demo2Material->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	demo2Material->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
 	demo2Material->Roughness = 0.2f;
 
 	Materials[demo2Material->Name] = std::move(demo2Material);
+
+	auto box = std::make_unique<Material>();
+	box->Name = "Box";
+	box->MatCBIndex = 4;
+	box->DiffuseSrvHeapIndex = 3;
+	box->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	box->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	box->Roughness = 0.2f;
+
+	Materials[box->Name] = std::move(box);
+
+	auto scene = std::make_unique<Material>();
+	scene->Name = "Scene";
+	scene->MatCBIndex = 5;
+	scene->DiffuseSrvHeapIndex = 4;
+	scene->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	scene->FresnelR0 = XMFLOAT3(0.5f, 0.5f, 0.5f);
+	scene->Roughness = 0.2f;
+
+	Materials[scene->Name] = std::move(scene);
 
 	auto emitterMaterial = std::make_unique<Material>();
 	emitterMaterial->Name = "emitter";
@@ -1230,7 +1287,7 @@ void Game::BuildMaterials()
 	auto skyMaterial = std::make_unique<Material>();
 	skyMaterial->Name = "sky";
 	skyMaterial->MatCBIndex = 3;
-	skyMaterial->DiffuseSrvHeapIndex = 3;
+	skyMaterial->DiffuseSrvHeapIndex = 5;
 	skyMaterial->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	skyMaterial->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	skyMaterial->Roughness = 1.0f;
@@ -1262,7 +1319,7 @@ void Game::BuildEntities()
 	systemData->SetWorldMatrix(currentEntityIndex);
 	playerEntity->ObjCBIndex = currentObjCBIndex;
 	playerEntity->Geo = Geometries["shapeGeo"].get();
-	playerEntity->Mat = Materials["demo2"].get();
+	playerEntity->Mat = Materials["Green"].get();
 	playerEntity->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	playerEntity->meshData = playerEntity->Geo->DrawArgs["Player"];
 	allEntities.push_back(std::move(playerEntity));
@@ -1279,7 +1336,7 @@ void Game::BuildEntities()
 		systemData->SetWorldMatrix(currentEntityIndex);
 		sceneEntity1->ObjCBIndex = currentObjCBIndex;
 		sceneEntity1->Geo = Geometries["shapeGeo"].get();
-		sceneEntity1->Mat = Materials["demo1"].get();
+		sceneEntity1->Mat = Materials["Scene"].get();
 		sceneEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		sceneEntity1->meshData = sceneEntity1->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(sceneEntity1));
@@ -1391,7 +1448,7 @@ void Game::BuildEntities()
 			systemData->SetWorldMatrix(currentEntityIndex);
 			enemyEntity1->ObjCBIndex = currentObjCBIndex;
 			enemyEntity1->Geo = Geometries["shapeGeo"].get();
-			enemyEntity1->Mat = Materials["demo1"].get();
+			enemyEntity1->Mat = Materials["Red"].get();
 			enemyEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 			enemyEntity1->meshData = enemyEntity1->Geo->DrawArgs["Cylinder"];
 			enemyEntity1->isRanged = false;
@@ -1461,7 +1518,7 @@ void Game::BuildEntities()
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity1->ObjCBIndex = currentObjCBIndex;
 		waypointEntity1->Geo = Geometries["shapeGeo"].get();
-		waypointEntity1->Mat = Materials["demo1"].get();
+		waypointEntity1->Mat = Materials["Box"].get();
 		waypointEntity1->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		waypointEntity1->meshData = waypointEntity1->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(waypointEntity1));
@@ -1476,7 +1533,7 @@ void Game::BuildEntities()
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity2->ObjCBIndex = currentObjCBIndex;
 		waypointEntity2->Geo = Geometries["shapeGeo"].get();
-		waypointEntity2->Mat = Materials["demo1"].get();
+		waypointEntity2->Mat = Materials["Box"].get();
 		waypointEntity2->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		waypointEntity2->meshData = waypointEntity2->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(waypointEntity2));
@@ -1491,7 +1548,7 @@ void Game::BuildEntities()
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity3->ObjCBIndex = currentObjCBIndex;
 		waypointEntity3->Geo = Geometries["shapeGeo"].get();
-		waypointEntity3->Mat = Materials["demo1"].get();
+		waypointEntity3->Mat = Materials["Box"].get();
 		waypointEntity3->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		waypointEntity3->meshData = waypointEntity3->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(waypointEntity3));
@@ -1506,7 +1563,7 @@ void Game::BuildEntities()
 		systemData->SetWorldMatrix(currentEntityIndex);
 		waypointEntity4->ObjCBIndex = currentObjCBIndex;
 		waypointEntity4->Geo = Geometries["shapeGeo"].get();
-		waypointEntity4->Mat = Materials["demo1"].get();
+		waypointEntity4->Mat = Materials["Box"].get();
 		waypointEntity4->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		waypointEntity4->meshData = waypointEntity4->Geo->DrawArgs["Box"];
 		allEntities.push_back(std::move(waypointEntity4));

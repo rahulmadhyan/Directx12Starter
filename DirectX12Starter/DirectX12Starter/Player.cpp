@@ -8,7 +8,7 @@ Player::Player(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, Sys
 	zTranslation = 0;
 	yRotation = 0;
 
-	moveRate = 0.001f;
+	moveRate = 0.0005f;
 
 	shootingRay = new Ray();
 	shootingRay->origin = XMFLOAT3(0.0f, 0.0f, 0.0f);

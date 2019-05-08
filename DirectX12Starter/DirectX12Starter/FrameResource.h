@@ -14,13 +14,24 @@ struct PassConstants
 {
 	DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 Proj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 InvView = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 InvProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 InvViewProj = MathHelper::Identity4x4();
+
 	DirectX::XMFLOAT3 CameraPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	float pad1 = 0.0f;
-	DirectX::XMFLOAT4 ambientLight = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	float DeltaTime;
-	float TotalTime;
-	float AspectRatio;
-	float pad2 = 0.0f;
+	
+	DirectX::XMFLOAT2 RenderTargetSize = { 0.0f, 0.0f };
+	DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
+	
+	float AspectRatio = 0.0f;
+	float FarZ = 0.0f;
+	float TotalTime = 0.0f;
+	float DeltaTime = 0.0f;
+
+	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+	
 	Light lights[MAX_LIGHTS];
 };
 

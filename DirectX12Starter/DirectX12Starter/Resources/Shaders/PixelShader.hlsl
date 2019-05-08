@@ -1,14 +1,14 @@
 // Defualts for number of lights.
 #ifndef NUM_DIR_LIGHTS
-	#define NUM_DIR_LIGHTS 3
+	#define NUM_DIR_LIGHTS 2
 #endif
 
 #ifndef NUM_POINT_LIGHTS
-	#define NUM_POINT_LIGHTS 0
+	#define NUM_POINT_LIGHTS 1
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
-	#define NUM_SPOT_LIGHTS 0
+	#define NUM_SPOT_LIGHTS 1
 #endif
 
 #include "LightingUtil.hlsl"
@@ -23,12 +23,23 @@ cbuffer cbPass : register(b1)
 {
 	float4x4 view;
 	float4x4 proj;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	
 	float3 eyePosW;
 	float cbPerObjectPad1;
-	float4 ambientLight;
-	float deltaTime;
-	float totalTime;
+	
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+
 	float aspectRatio;
+	float farZ;
+	float totalTime;
+	float deltaTime;
+
+	float4 ambientLight;
 
 	Light lights[MaxLights];
 }
@@ -57,6 +68,7 @@ cbuffer particleData : register(b3)
 struct VS_OUTPUT
 {
 	float4 Position		: SV_POSITION;
+	float3 PositionW	: POSITION;
 	float3 Normal		: NORMAL;
 	float2 UV			: TEXCOORD;
 };
@@ -69,7 +81,7 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	float4 difAlbedo = diffuseMap.Sample(sampleLinear, input.UV) * diffuseAlbedo;
 	input.Normal = normalize(input.Normal);
 
-	float3 toEyeNormal = normalize(eyePosW - input.Position.xyz);
+	float3 toEyeNormal = normalize(eyePosW - input.PositionW);
 
 	// ambient light
 	float4 ambient = ambientLight * difAlbedo;
@@ -77,11 +89,11 @@ float4 main(VS_OUTPUT input) : SV_TARGET
 	const float shininess = 1.0f - roughness;
 	Material mat = { difAlbedo, fresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
-	float4 directLight = ComputeLighting(lights, mat, input.Position.xyz, input.Normal, toEyeNormal, shadowFactor);
+	float4 directLight = ComputeLighting(lights, mat, input.PositionW, input.Normal, toEyeNormal, shadowFactor);
 
 	float4 litColor = directLight + ambient;
 
-	litColor.a = difAlbedo.a;
+	litColor.a = diffuseAlbedo.a;
 
 	return litColor;
 }

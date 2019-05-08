@@ -3,7 +3,7 @@
 Enemies::Enemies(SystemData *systemData) : systemData(systemData)
 {
 	const unsigned int threadCount = std::thread::hardware_concurrency();
-	jobSystem1.Start(threadCount);
+	//jobSystem1.Start(threadCount);
 }
 
 Enemies::~Enemies()
@@ -51,17 +51,17 @@ void Enemies::Update(const Timer &timer)
 {
 	deltaTime = timer.GetDeltaTime();
 
-	/*for (auto e : enemyUpdateEntities)
+	for (auto e : enemyUpdateEntities)
 	{
 		UpdateEnemy(e);
-	}*/
+	}
 
-	for (size_t i = 0; i < listEnemies.size(); i++)
+	/*for (size_t i = 0; i < listEnemies.size(); i++)
 	{
 		jobSystem1.Submit([ = ] {
 			UpdateEnemies(std::ref(listEnemies[i]));
 		});
-	}
+	}*/
 
 	for (auto e : enemyEntities)
 	{
@@ -110,15 +110,15 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 	float distanceToWaypoint = 0.0f;
 	XMStoreFloat(&distanceToWaypoint, waypointLength);
 
-	//if (distance < 20.0f && distance > 1.0f)
-	//{
-	//	systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
-	//	systemData->SetWorldMatrix(e->SystemWorldIndex);
+	if (distance < 50.0f && distance > 1.0f)
+	{
+		systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
+		systemData->SetWorldMatrix(e->SystemWorldIndex);
 
-	//	e->NumFramesDirty = gNumberFrameResources;
+		//e->NumFramesDirty = gNumberFrameResources;
 
-	//	// fire or attack
-	//}
+		// fire or attack
+	}
 	if (distanceToWaypoint > 3.0f)
 	{
 		// patrol waypoints
