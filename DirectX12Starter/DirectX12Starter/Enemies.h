@@ -15,6 +15,8 @@ public:
 	void SetEnemyEntitites(std::vector<EnemyEntity*> enemyEntities);
 	void SetWaypointEntitites(std::vector<Entity*> wayPointEntities);
 
+	//void SetEnemyPositions(std::vector<EnemyEntity*> enemyEntities);
+
 	void Update(const Timer &timer);
 	void UpdateEnemies(std::vector<EnemyUpdateEntity*> enemyEntities);
 	void UpdateEnemy(EnemyUpdateEntity* e);
@@ -32,6 +34,9 @@ private:
 	std::vector<EnemyUpdateEntity*> enemyUpdateEntities;
 	std::vector<std::vector<EnemyUpdateEntity*>> listEnemies;
 	
+	//std::vector<XMFLOAT3> enemyPositions;
+	std::vector<XMFLOAT3> wayPointPositions;
+
 	std::vector<Entity*> wayPointEntities;
 };
 

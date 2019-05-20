@@ -159,7 +159,7 @@ bool Game::Initialize()
 	);
 
 	levelSize = 500;
-	numberEnemies = 100;
+	numberEnemies = 50;
 
 	BuildTextures();
 	BuildRootSignature();
@@ -258,7 +258,7 @@ void Game::Update(const Timer &timer)
 	mainCamera.Update();
 	inputManager->UpdateController();
 
-	player->Update(timer, playerEntities[0], enemyEntities);
+	//player->Update(timer, playerEntities[0], enemyEntities);
 
 	enemies->Update(timer);
 
@@ -405,6 +405,9 @@ void Game::UpdateMainPassCB(const Timer &timer)
 
 	MainPassCB.lights[0].Direction = { 1.0f, 0.0f, 0.0f };
 	MainPassCB.lights[0].Strength = { 0.7f, 0.7f, 0.7f };
+
+	MainPassCB.lights[1].Direction = { 1.0f, 1.0f, 1.0f };
+	MainPassCB.lights[1].Strength = { 0.3f, 0.3f, 0.3f };
 
 	auto currPassCB = currentFrameResource->PassCB.get();
 	currPassCB->CopyData(0, MainPassCB);

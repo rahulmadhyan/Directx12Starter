@@ -49,14 +49,17 @@ void Enemies::SetWaypointEntitites(std::vector<Entity*> wayPointEntities)
 // have the update function include waypoints vector
 void Enemies::Update(const Timer &timer)
 {
+	// Change the type of update function here
+	// To change check different behavior like data oriented and object oriented
+
 	deltaTime = timer.GetDeltaTime();
 
-	/*for (auto e : enemyUpdateEntities)
+	for (auto e : enemyUpdateEntities)
 	{
 		UpdateEnemy(e);
-	}*/
+	}
 
-	Update2();
+	//Update2();
 
 	/*for (size_t i = 0; i < listEnemies.size(); i++)
 	{
@@ -65,22 +68,23 @@ void Enemies::Update(const Timer &timer)
 		});
 	}*/
 
-	/*for (auto e : enemyEntities)
+	for (auto e : enemyEntities)
 	{
 		e->NumFramesDirty = gNumberFrameResources;
-	}*/
+	}
 }
 
 void Enemies::UpdateEnemies(std::vector<EnemyUpdateEntity*> enemyEntities)
 {
-	/*for (auto e : enemyEntities)
+	for (auto e : enemyEntities)
 	{
 		UpdateEnemy(e);
-	}*/
+	}
 
-	Update2();
+	//Update2();
 }
 
+// Example for enemy Update with object oriented pattern.
 void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 {
 	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));
@@ -90,7 +94,6 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 
 	const XMFLOAT3* enemyRotation = systemData->GetWorldRotation(e->SystemWorldIndex);
 	XMVECTOR enemyRotationVector = XMLoadFloat3(enemyRotation);
-	//XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
 	XMVECTOR normalDifferenceVector = XMVector3Normalize(differenceVector);
 
@@ -103,7 +106,6 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 
 	// Waypoint calculation
 	Entity* currentWaypoint = wayPointEntities[e->CurrentWaypointIndex % 4];
-	//XMVECTOR currentWaypointVector = XMLoadFloat3(currentWaypoint);
 
 	XMVECTOR currentWaypointVector = XMLoadFloat3(systemData->GetWorldPosition(currentWaypoint->SystemWorldIndex));
 	XMVECTOR differenceWaypointVector = XMVectorSubtract(currentWaypointVector, enemyPosition);
@@ -114,15 +116,7 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 	float distanceToWaypoint = 0.0f;
 	XMStoreFloat(&distanceToWaypoint, waypointLength);
 
-	//if (distance < 20.0f && distance > 1.0f)
-	//{
-	//	systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normalDifferenceVector) * deltaTime * moveSpeed, 0.0f, XMVectorGetZ(normalDifferenceVector) * deltaTime * moveSpeed);
-	//	systemData->SetWorldMatrix(e->SystemWorldIndex);
-
-	//	e->NumFramesDirty = gNumberFrameResources;
-
-	//	// fire or attack
-	//}
+	
 	if (distanceToWaypoint > 3.0f)
 	{
 		// patrol waypoints
@@ -130,7 +124,6 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 		systemData->SetTranslation(e->SystemWorldIndex, XMVectorGetX(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f, 0.0f, XMVectorGetZ(normaldifferenceWaypointVector) * deltaTime * moveSpeed * 0.6f);
 		systemData->SetWorldMatrix(e->SystemWorldIndex);
 
-		//e->NumFramesDirty = gNumberFrameResources;
 	}
 	else if (distanceToWaypoint < 3.0f)
 	{
@@ -138,6 +131,7 @@ void Enemies::UpdateEnemy(EnemyUpdateEntity* e)
 	}
 }
 
+// Update function using Data oriented pattern
 void Enemies::Update2()
 {
 	XMVECTOR playerPosition = XMLoadFloat3(systemData->GetWorldPosition(playerEntity->SystemWorldIndex));

@@ -56,7 +56,6 @@ struct EnemyEntity : public Entity
 
 	XMFLOAT3 diffVectorNormal;
 	XMFLOAT3 diffWayPointVecNormal;
-
 };
 
 struct EnemyUpdateEntity
